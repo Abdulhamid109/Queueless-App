@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:queueless/Customer/LoginScreen.dart';
+import 'package:queueless/Widgets/flutter_mapp.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -137,7 +138,8 @@ class _SignupScreenState extends State<SignupScreen> {
                             Icons.person,
                           ),
                           validator: (v) {
-                            if (v == null || v.isEmpty) return "Enter your full Name";
+                            if (v == null || v.isEmpty)
+                              return "Enter your full Name";
                             return null;
                           },
                         ),
@@ -150,7 +152,8 @@ class _SignupScreenState extends State<SignupScreen> {
                             Icons.mail_outline_rounded,
                           ),
                           validator: (v) {
-                            if (v == null || v.isEmpty) return "Enter your email";
+                            if (v == null || v.isEmpty)
+                              return "Enter your email";
                             if (!v.contains('@')) return "Enter a valid email";
                             return null;
                           },
@@ -170,26 +173,137 @@ class _SignupScreenState extends State<SignupScreen> {
                             ),
                           ),
                           validator: (v) {
-                            if (v == null || v.isEmpty) return "Enter your password";
-                            if (v.length < 8) return "Password must be at least 8 characters";
+                            if (v == null || v.isEmpty)
+                              return "Enter your password";
+                            if (v.length < 8)
+                              return "Password must be at least 8 characters";
                             return null;
                           },
                         ),
                         const SizedBox(height: 10),
+                        TextFormField(
+                          keyboardType: TextInputType.phone,
+                          decoration: _fieldDecoration("Phone No", Icons.phone),
+                          validator: (v) {
+                            if (v == null || v.isEmpty)
+                              return "Enter your Phone no";
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 14),
 
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: Text(
-                            "Forgot password?",
-                            style: TextStyle(
-                              color: gold,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
+                        // An Alert Dialog indicating the map (flutter_map)
+                        Container(
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: fieldBg,
+                            border: Border.all(color: gold),
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text("Address is herer"),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: navy,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(7),
+                                    ),
+                                  ),
+                                  onPressed: () {
+                                    showDialog(
+                                      barrierDismissible: false,
+                                      context: context,
+                                      builder: (context) {
+                                        return AlertDialog(
+                                          title: Center(
+                                            child: Text(
+                                              "Select Your Address from the map",
+                                              style: TextStyle(fontSize: 17),
+                                            ),
+                                          ),
+
+                                          content: SizedBox(
+                                            width: 500,
+
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.max,
+
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child: TextFormField(
+                                                        keyboardType:
+                                                            TextInputType.text,
+
+                                                        decoration:
+                                                            _fieldDecoration(
+                                                              "Search Your location",
+                                                              Icons.search,
+                                                            ),
+                                                      ),
+                                                    ),
+
+                                                    SizedBox(width: 10),
+
+                                                    ElevatedButton(
+                                                      style: ElevatedButton.styleFrom(
+                                                        backgroundColor: navy,
+
+                                                        shape: RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                7,
+                                                              ),
+                                                        ),
+                                                      ),
+
+                                                      onPressed: () {},
+
+                                                      child: Text("Search",style: TextStyle(color: cream),),
+                                                    ),
+                                                  ],
+                                                ),
+                                              
+                                              //here we wiill display our map
+
+                                                SizedBox(height: 10,),
+                                               Expanded(
+                                                  child: FlutterMapp()),
+                                              
+                                              ],
+
+                                            ),
+                                          ),
+                                          actions: [
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: <Widget>[
+                                                TextButton(onPressed: ()=>Navigator.pop(context), child: Text("Close")),
+                                                TextButton(onPressed: (){}, child: Text("Save Address"))
+                                              ],
+                                            )
+                                          ],
+                                        );
+                                      },
+                                    );
+                                  },
+
+                                  child: Text(
+                                    "Open Map",
+                                    style: TextStyle(color: cream),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
-                        const SizedBox(height: 22),
 
+                        const SizedBox(height: 14),
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
@@ -217,31 +331,6 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                         const SizedBox(height: 20),
 
-                        Row(
-                          children: const [
-                            Expanded(child: Divider(color: Color(0xFFE0D8CF))),
-                            Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 12),
-                              child: Text(
-                                "or continue with",
-                                style: TextStyle(
-                                  color: mutedText,
-                                  fontSize: 11,
-                                ),
-                              ),
-                            ),
-                            Expanded(child: Divider(color: Color(0xFFE0D8CF))),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-
-                        Row(
-                          children: [
-                            Expanded(child: _socialButton("G", "Google")),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-
                         Center(
                           child: RichText(
                             text: TextSpan(
@@ -255,15 +344,19 @@ class _SignupScreenState extends State<SignupScreen> {
                                     fontWeight: FontWeight.w500,
                                   ),
                                   recognizer: TapGestureRecognizer()
-                                  ..onTap = (){
-                                    Navigator.push(context, MaterialPageRoute(builder: (context) => LoginScreen(),));
-                                  }
+                                    ..onTap = () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => LoginScreen(),
+                                        ),
+                                      );
+                                    },
                                 ),
                               ],
                             ),
                           ),
                         ),
-
                       ],
                     ),
                   ),

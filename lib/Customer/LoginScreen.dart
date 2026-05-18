@@ -204,31 +204,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 20),
 
-                        Row(
-                          children: const [
-                            Expanded(child: Divider(color: Color(0xFFE0D8CF))),
-                            Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 12),
-                              child: Text(
-                                "or continue with",
-                                style: TextStyle(
-                                  color: mutedText,
-                                  fontSize: 11,
-                                ),
-                              ),
-                            ),
-                            Expanded(child: Divider(color: Color(0xFFE0D8CF))),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-
-                        Row(
-                          children: [
-                            Expanded(child: _socialButton("G", "Google")),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-
                         Center(
                           child: RichText(
                             text: TextSpan(
