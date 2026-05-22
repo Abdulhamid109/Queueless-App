@@ -1,7 +1,12 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:queueless/Customer/LoginScreen.dart';
 import 'package:queueless/Widgets/flutter_mapp.dart';
+import 'package:queueless/Widgets/locationn_error.dart';
+import 'package:queueless/helper/RequestLocationPermission.dart';
+import 'package:queueless/helper/getAddressFromLatLong.dart';
+import 'package:queueless/helper/getLatLlongfromAddress.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -20,6 +25,46 @@ class _SignupScreenState extends State<SignupScreen> {
   static const Color fieldBg = Color(0xFFFFFFFF);
   static const Color border = Color(0xFFE8E1D8);
   static const Color mutedText = Color(0xFF8A7E72);
+
+  double latitude = 0;
+  double longitude = 0;
+  String currentAddress = "";
+  String UpdatedAddress = "";
+
+  Future<void> getCurrentLocation() async {
+    final PermissionGranted = await requestLocationPermission();
+    if (!PermissionGranted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => LocationnError()),
+      );
+      return;
+    }
+
+    Position position = await Geolocator.getCurrentPosition(
+      locationSettings: LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 0,
+      ),
+    );
+    double lat = position.latitude;
+    double long = position.longitude;
+    // double accuracy = position.accuracy;
+    // double speed = position.speed;
+    // double heading = position.heading;
+
+    print('--------------Lat: $lat, Long: $long -------------------------');
+    final address = await getAddressFromLatLong(
+      position.latitude,
+      position.longitude,
+    );
+
+    setState(() {
+      latitude = position.latitude;
+      longitude = position.longitude;
+      currentAddress = address;
+    });
+  }
 
   InputDecoration _fieldDecoration(
     String label,
@@ -69,7 +114,18 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    getCurrentLocation();
+    getLatLongfromAddress("Ghansoli");
+  }
+
+  TextEditingController searchAddressController = TextEditingController();
+  Map<String,double> data = {};
+
+  @override
   Widget build(BuildContext context) {
+    double width = MediaQuery.of(context).size.width * 1;
     return Scaffold(
       backgroundColor: navy,
       body: SafeArea(
@@ -205,7 +261,9 @@ class _SignupScreenState extends State<SignupScreen> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text("Address is herer"),
+                                currentAddress.isEmpty
+                                    ? Center(child: CircularProgressIndicator())
+                                    : Expanded(child: Text(currentAddress,overflow: TextOverflow.ellipsis,maxLines: 1,)),
                                 ElevatedButton(
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: navy,
@@ -218,20 +276,21 @@ class _SignupScreenState extends State<SignupScreen> {
                                       barrierDismissible: false,
                                       context: context,
                                       builder: (context) {
-                                        return AlertDialog(
+                                        return StatefulBuilder(builder: (context, setState) {
+                                          return AlertDialog(
                                           title: Center(
                                             child: Text(
                                               "Select Your Address from the map",
-                                              style: TextStyle(fontSize: 17),
+                                              style: TextStyle(fontSize: 16),
+                                              textAlign: TextAlign.center,
                                             ),
                                           ),
 
                                           content: SizedBox(
-                                            width: 500,
+                                            width: width * 0.8,
 
                                             child: Column(
                                               mainAxisSize: MainAxisSize.max,
-
                                               children: [
                                                 Row(
                                                   children: [
@@ -239,10 +298,10 @@ class _SignupScreenState extends State<SignupScreen> {
                                                       child: TextFormField(
                                                         keyboardType:
                                                             TextInputType.text,
-
+                                                        controller: searchAddressController,
                                                         decoration:
                                                             _fieldDecoration(
-                                                              "Search Your location",
+                                                              "location",
                                                               Icons.search,
                                                             ),
                                                       ),
@@ -262,33 +321,71 @@ class _SignupScreenState extends State<SignupScreen> {
                                                         ),
                                                       ),
 
-                                                      onPressed: () {},
+                                                      onPressed: () async{
+                                                        data = await getLatLongfromAddress(searchAddressController.text.toString());
+                                                              setState(() {
+                                                                latitude = data["lat"] as double;
+                                                                longitude = data["long"] as double;
+                                                              });
+                                                      },
 
-                                                      child: Text("Search",style: TextStyle(color: cream),),
+                                                      child: Text(
+                                                        "Search",
+                                                        style: TextStyle(
+                                                          color: cream,
+                                                        ),
+                                                      ),
                                                     ),
                                                   ],
                                                 ),
-                                              
-                                              //here we wiill display our map
 
-                                                SizedBox(height: 10,),
-                                               Expanded(
-                                                  child: FlutterMapp()),
-                                              
+                                                //here we wiill display our map
+                                                SizedBox(height: 10),
+                                                Expanded(
+                                                  child: FlutterMapp(
+                                                    latitude: latitude,
+                                                    longitude: longitude,
+                                                    onAddressChange: (value,lat,long) {
+                                                      setState(() {
+                                                        print("The Address comming from the Child widget---- $value");
+                                                        UpdatedAddress = value;
+                                                        latitude=lat;
+                                                        longitude=long;
+
+                                                        print("The Address comming from the Child widget---- $UpdatedAddress");
+                                                      });
+                                                      
+                                                    },
+                                                  ),
+                                                ),
                                               ],
-
                                             ),
                                           ),
                                           actions: [
                                             Row(
-                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                              children: <Widget>[
-                                                TextButton(onPressed: ()=>Navigator.pop(context), child: Text("Close")),
-                                                TextButton(onPressed: (){}, child: Text("Save Address"))
+                                              mainAxisAlignment: .spaceBetween,
+                                              children: [
+                                                UpdatedAddress.isEmpty?Text(""):TextButton(
+                                                  onPressed: (){
+                                                    this.setState((){
+                                                      currentAddress = UpdatedAddress;
+                                                      latitude = latitude;
+                                                    });
+                                                    Navigator.pop(context);
+                                                  },
+                                                  child: Text("Save Address"),
+                                                ),
+                                                TextButton(
+                                                  onPressed: () =>
+                                                      Navigator.pop(context),
+                                                  child: Text("Close Map"),
+                                                ),
                                               ],
-                                            )
+                                            ),
                                           ],
                                         );
+                                      
+                                        },);
                                       },
                                     );
                                   },

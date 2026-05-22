@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:queueless/Customer/SignupScreen.dart';
+import 'package:queueless/admin/LoginScreen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -137,7 +138,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             Icons.mail_outline_rounded,
                           ),
                           validator: (v) {
-                            if (v == null || v.isEmpty) return "Enter your email";
+                            if (v == null || v.isEmpty)
+                              return "Enter your email";
                             if (!v.contains('@')) return "Enter a valid email";
                             return null;
                           },
@@ -157,8 +159,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                           validator: (v) {
-                            if (v == null || v.isEmpty) return "Enter your password";
-                            if (v.length < 8) return "Password must be at least 8 characters";
+                            if (v == null || v.isEmpty)
+                              return "Enter your password";
+                            if (v.length < 8)
+                              return "Password must be at least 8 characters";
                             return null;
                           },
                         ),
@@ -213,10 +217,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                 TextSpan(
                                   text: "Sign up",
                                   recognizer: TapGestureRecognizer()
-                                  ..onTap = (){
-                                    Navigator.push(context, MaterialPageRoute(builder: (context) => SignupScreen(),));
-                                  }
-                                  ,
+                                    ..onTap = () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => SignupScreen(),
+                                        ),
+                                      );
+                                    },
                                   style: TextStyle(
                                     color: gold,
                                     fontWeight: FontWeight.w500,
@@ -247,11 +255,19 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 16),
                         Center(
                           child: RichText(
-                            text: const TextSpan(
+                            text: TextSpan(
                               style: TextStyle(fontSize: 12, color: mutedText),
                               children: [
                                 TextSpan(text: "Login as Business owner? "),
                                 TextSpan(
+                                  recognizer: TapGestureRecognizer()
+                                    ..onTap = () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            AdminLoginScreen(),
+                                      ),
+                                    ),
                                   text: "Login",
                                   style: TextStyle(
                                     color: gold,
