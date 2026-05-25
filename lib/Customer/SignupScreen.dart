@@ -1,12 +1,16 @@
+import 'dart:convert';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:queueless/Customer/LoginScreen.dart';
 import 'package:queueless/Widgets/flutter_mapp.dart';
 import 'package:queueless/Widgets/locationn_error.dart';
+import 'package:queueless/constant/env.dart';
 import 'package:queueless/helper/RequestLocationPermission.dart';
 import 'package:queueless/helper/getAddressFromLatLong.dart';
 import 'package:queueless/helper/getLatLlongfromAddress.dart';
+import 'package:http/http.dart' as http;
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -18,6 +22,10 @@ class SignupScreen extends StatefulWidget {
 class _SignupScreenState extends State<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _obscurePassword = true;
+  TextEditingController nameController = TextEditingController();
+  TextEditingController emailController = TextEditingController();
+  TextEditingController passwordController = TextEditingController();
+  TextEditingController phoneController = TextEditingController();
 
   static const Color navy = Color(0xFF1A1A2E);
   static const Color cream = Color(0xFFF5F0EB);
@@ -30,13 +38,14 @@ class _SignupScreenState extends State<SignupScreen> {
   double longitude = 0;
   String currentAddress = "";
   String UpdatedAddress = "";
+  bool isloading = false;
 
   Future<void> getCurrentLocation() async {
     final PermissionGranted = await requestLocationPermission();
     if (!PermissionGranted) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => LocationnError()),
+        MaterialPageRoute(builder: (context) => LocationnError(screen: SignupScreen(),)),
       );
       return;
     }
@@ -64,6 +73,76 @@ class _SignupScreenState extends State<SignupScreen> {
       longitude = position.longitude;
       currentAddress = address;
     });
+  }
+
+  Future<void> handleSignup() async{
+    setState(() {
+      isloading=true;
+    });
+    try {
+      final response = await http.post(
+        Uri.parse("$BaseUrl/customer/auth/signup"),
+        headers: {'Content-Type':'application/json'},
+        body: jsonEncode({
+          'FullName':nameController.text.toString(),
+          'email':emailController.text.toString().toLowerCase(),
+          'password':passwordController.text,
+          'phone':phoneController.text,
+          'CustomerAddress':UpdatedAddress.isEmpty?currentAddress:UpdatedAddress,
+          'latitude':latitude,
+          'longitude':longitude,
+        })
+      );
+      if (response.statusCode == 200) {
+        var decodedbody = jsonDecode(response.body);
+        print("Data Body => ${decodedbody}");
+        nameController.clear();
+        emailController.clear();
+        passwordController.clear();
+        phoneController.clear();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Successfully Account created...redirecting to LoginPage"),
+            duration: Duration(seconds: 2),
+          ),
+        ).closed.then((value) => Navigator.push(context, MaterialPageRoute(builder: (context) => LoginScreen(),)),);
+      } else {
+        print(
+          "Some Error happened with code as ${response.statusCode} => ${response.body} ",
+        );
+        var error = jsonDecode(response.body);
+        final messenger = ScaffoldMessenger.of(context);
+        messenger.showMaterialBanner(
+          MaterialBanner(
+            backgroundColor: Colors.red.shade200,
+            leading: Icon(Icons.error, color: Colors.red),
+            content: Text(error["error"]),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  messenger.hideCurrentMaterialBanner();
+                },
+                child: Text(
+                  "Dismiss",
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w300),
+                ),
+              ),
+            ],
+          ),
+        );
+        Future.delayed(Duration(seconds: 5), () {
+          if (messenger.mounted) {
+            messenger.hideCurrentMaterialBanner();
+          }
+        });
+      }
+    } catch (e) {
+      print("Something went wrong $e");
+    }finally{
+      setState(() {
+      isloading=false;
+    });
+    }
   }
 
   InputDecoration _fieldDecoration(
@@ -188,7 +267,8 @@ class _SignupScreenState extends State<SignupScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         TextFormField(
-                          keyboardType: TextInputType.emailAddress,
+                          controller: nameController,
+                          keyboardType: TextInputType.text,
                           decoration: _fieldDecoration(
                             "Full_Name",
                             Icons.person,
@@ -202,6 +282,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         const SizedBox(height: 14),
 
                         TextFormField(
+                          controller: emailController,
                           keyboardType: TextInputType.emailAddress,
                           decoration: _fieldDecoration(
                             "Email address",
@@ -217,6 +298,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         const SizedBox(height: 14),
 
                         TextFormField(
+                          controller: passwordController,
                           obscureText: _obscurePassword,
                           decoration: _fieldDecoration(
                             "Password",
@@ -238,6 +320,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                         const SizedBox(height: 10),
                         TextFormField(
+                          controller: phoneController,
                           keyboardType: TextInputType.phone,
                           decoration: _fieldDecoration("Phone No", Icons.phone),
                           validator: (v) {
@@ -405,7 +488,9 @@ class _SignupScreenState extends State<SignupScreen> {
                           width: double.infinity,
                           child: ElevatedButton(
                             onPressed: () {
-                              if (_formKey.currentState!.validate()) {}
+                              if (_formKey.currentState!.validate()) {
+                                handleSignup();
+                              }
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: navy,
@@ -416,7 +501,9 @@ class _SignupScreenState extends State<SignupScreen> {
                               ),
                               elevation: 0,
                             ),
-                            child: const Text(
+                            child: isloading?
+                            Center(child: CircularProgressIndicator(),)
+                            :const Text(
                               "Sign up",
                               style: TextStyle(
                                 fontSize: 15,

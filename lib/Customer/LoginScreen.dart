@@ -1,7 +1,13 @@
+import 'dart:convert';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:queueless/Customer/HomeScreen.dart';
 import 'package:queueless/Customer/SignupScreen.dart';
 import 'package:queueless/admin/LoginScreen.dart';
+import 'package:http/http.dart' as http;
+import 'package:queueless/constant/env.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,6 +19,9 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _obscurePassword = true;
+  TextEditingController emailController = TextEditingController();
+  TextEditingController passwordController = TextEditingController();
+  bool isloading =false;
 
   static const Color navy = Color(0xFF1A1A2E);
   static const Color cream = Color(0xFFF5F0EB);
@@ -66,6 +75,71 @@ class _LoginScreenState extends State<LoginScreen> {
         borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
       ),
     );
+  }
+
+  Future<void> handleLogin() async {
+    setState(() {
+      isloading=true;
+    });
+    try {
+      final response = await http.post(
+        Uri.parse("$BaseUrl/customer/auth/Login"),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': emailController.text.toString().toLowerCase(),
+          'password': passwordController.text.toString(),
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        var decodedbody = jsonDecode(response.body);
+        SharedPreferences pref = await SharedPreferences.getInstance();
+        pref.setString("token", decodedbody["token"]);
+        print("Token Data => ${decodedbody["token"]}");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Successfully logged in...redirecting to homepage"),
+            duration: Duration(seconds: 2),
+          ),
+        ).closed.then((value) => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Homescreen(),)),);
+
+      } else {
+        print(
+          "Some Error happened with code as ${response.statusCode} => ${response.body} ",
+        );
+        var error = jsonDecode(response.body);
+        final messenger = ScaffoldMessenger.of(context);
+        messenger.showMaterialBanner(
+          MaterialBanner(
+            backgroundColor: Colors.red.shade200,
+            leading: Icon(Icons.error, color: Colors.red),
+            content: Text(error["error"]),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  messenger.hideCurrentMaterialBanner();
+                },
+                child: Text(
+                  "Dismiss",
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w300),
+                ),
+              ),
+            ],
+          ),
+        );
+        Future.delayed(Duration(seconds: 5), () {
+          if (messenger.mounted) {
+            messenger.hideCurrentMaterialBanner();
+          }
+        });
+      }
+    } catch (e) {
+      print("Error => $e");
+    }finally{
+      setState(() {
+        isloading=false;
+      });
+    }
   }
 
   @override
@@ -132,6 +206,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         TextFormField(
+                          controller: emailController,
                           keyboardType: TextInputType.emailAddress,
                           decoration: _fieldDecoration(
                             "Email address",
@@ -147,6 +222,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 14),
 
                         TextFormField(
+                          controller: passwordController,
                           obscureText: _obscurePassword,
                           decoration: _fieldDecoration(
                             "Password",
@@ -184,8 +260,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
-                            onPressed: () {
-                              if (_formKey.currentState!.validate()) {}
+                            onPressed: () async{
+                              if (_formKey.currentState!.validate()) {
+                                await handleLogin();
+                              }
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: navy,
@@ -196,7 +274,10 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               elevation: 0,
                             ),
-                            child: const Text(
+                            child: isloading?Padding(
+                              padding: const EdgeInsets.all(3.0),
+                              child: Center(child: CircularProgressIndicator(),),
+                            ):const Text(
                               "Sign in",
                               style: TextStyle(
                                 fontSize: 15,

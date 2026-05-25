@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:queueless/Customer/SignupScreen.dart';
 
-class LocationnError extends StatelessWidget {
-  const LocationnError({super.key});
+class LocationnError extends StatefulWidget {
+  final Widget screen;
+  const LocationnError({super.key,required this.screen});
 
+  @override
+  State<LocationnError> createState() => _LocationnErrorState();
+}
+
+class _LocationnErrorState extends State<LocationnError> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -20,7 +25,7 @@ class LocationnError extends StatelessWidget {
                 ),
                 backgroundColor: Colors.red
               ),
-              onPressed: ()=>Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => SignupScreen(),)), child: Text("Try again",style: TextStyle(color: Colors.white),))
+              onPressed: ()=>Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => widget.screen,)), child: Text("Try again",style: TextStyle(color: Colors.white),))
           ],
         ),
       ),
