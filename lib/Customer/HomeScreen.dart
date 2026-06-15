@@ -1,9 +1,9 @@
 // On homepage also we need to ask for the location
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:queueless/Customer/BusinessCategoryScreen.dart';
 import 'package:queueless/Widgets/CustomerAppbar.dart';
 import 'package:queueless/Widgets/CustomerDrawer.dart';
 import 'package:queueless/Widgets/locationn_error.dart';
@@ -49,7 +49,7 @@ class _HomescreenState extends State<Homescreen> {
 
       if (response.statusCode == 200) {
         final responsebody = jsonDecode(response.body);
-        print("Body => $responsebody");
+        // print("Body => $responsebody");
         return responsebody;
       }
       throw Exception("Failed to fetch profile data");
@@ -61,7 +61,6 @@ class _HomescreenState extends State<Homescreen> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     locationCheck();
     _profileDataFuture = getProfile();
@@ -129,12 +128,17 @@ class _HomescreenState extends State<Homescreen> {
               hintText: "Select Business Categories",
               dropdownMenuEntries: [
                 DropdownMenuEntry(
-                  value: "HairSaloons",
+                  value: "HairSaloon",
                   label: "Hair Saloons",
                 ),
                 DropdownMenuEntry(value: "Clinics", label: "Clinics"),
               ],
-              onSelected: (value) => print(value),
+              onSelected: (value) => {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => Businesscategoryscreen(bCategory: value!),)),
+                setState(() {
+                  value = "";
+                })
+              },
             ),
             SizedBox(height: height * 0.05),
             Divider(thickness: 0.3),
@@ -167,6 +171,7 @@ class _HomescreenState extends State<Homescreen> {
                         opacity: 0.5,
                         child: Text("Find all hair saloons near you"),
                       ),
+                      onTap: ()=>Navigator.push(context, MaterialPageRoute(builder: (context) => Businesscategoryscreen(bCategory: "HairSaloon"),)),
                     ),
                   ],
                 ),
@@ -198,8 +203,9 @@ class _HomescreenState extends State<Homescreen> {
                       title: Text("Clinics"),
                       subtitle: Opacity(
                         opacity: 0.5,
-                        child: Text("Find all hair saloons near you"),
+                        child: Text("Find all Clinics near you"),
                       ),
+                      onTap: ()=>Navigator.push(context, MaterialPageRoute(builder: (context) => Businesscategoryscreen(bCategory: "Clinics"),)),
                     ),
                   ],
                 ),

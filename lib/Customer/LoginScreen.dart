@@ -99,7 +99,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text("Successfully logged in...redirecting to homepage"),
-            duration: Duration(seconds: 2),
+            duration: Duration(seconds: 1),
           ),
         ).closed.then((value) => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Homescreen(),)),);
 

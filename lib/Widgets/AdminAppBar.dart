@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:queueless/Customer/ProfileScreen.dart';
-import 'package:queueless/Customer/notification.dart';
+import 'package:queueless/admin/ProfilePage.dart';
 
-class Customerappbar extends StatelessWidget
+class Adminappbar extends StatelessWidget
     implements PreferredSizeWidget {
 
-  const Customerappbar({super.key});
+  const Adminappbar({super.key});
 
   @override
   Size get preferredSize => const Size.fromHeight(70);
@@ -14,7 +13,7 @@ class Customerappbar extends StatelessWidget
   Widget build(BuildContext context) {
 
     return AppBar(
-      title: const Text("Queueless"),
+      title: const Text("Queueless-Admin",style: TextStyle(color: Colors.green),),
       centerTitle: true,
 
       actions: [
@@ -26,22 +25,18 @@ class Customerappbar extends StatelessWidget
               context,
               MaterialPageRoute(
                 builder: (context) =>
-                    Profilescreen(),
+                    Profilepage(),
               ),
             ),
+
             icon: const Icon(
               Icons.person,
               size: 20,
+
             ),
           ),
         ),
-        SizedBox(width: 5,),
 
-        CircleAvatar(
-          backgroundColor: Colors.blueGrey.shade100,
-          child: IconButton(onPressed: ()=>Navigator.push(context, MaterialPageRoute(builder: (context) => NotificationScreen(),)), icon: Icon(Icons.notifications))
-          
-          ),
         const SizedBox(width: 10),
       ],
     );

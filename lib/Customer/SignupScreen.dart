@@ -103,7 +103,7 @@ class _SignupScreenState extends State<SignupScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text("Successfully Account created...redirecting to LoginPage"),
-            duration: Duration(seconds: 2),
+            duration: Duration(seconds: 1),
           ),
         ).closed.then((value) => Navigator.push(context, MaterialPageRoute(builder: (context) => LoginScreen(),)),);
       } else {
@@ -357,6 +357,8 @@ class _SignupScreenState extends State<SignupScreen> {
                                   onPressed: () {
                                     showDialog(
                                       barrierDismissible: false,
+                                      barrierColor: const Color.fromARGB(190, 0, 0, 0),
+
                                       context: context,
                                       builder: (context) {
                                         return StatefulBuilder(builder: (context, setState) {
@@ -480,6 +482,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                 ),
                               ],
                             ),
+                          
                           ),
                         ),
 

@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:queueless/Customer/FeedbackScreen.dart';
+import 'package:queueless/Customer/LoginScreen.dart';
 import 'package:queueless/Widgets/CustomerAppbar.dart';
 import 'package:queueless/Widgets/CustomerDrawer.dart';
 import 'package:http/http.dart' as http;
@@ -251,6 +253,7 @@ class _ProfilescreenState extends State<Profilescreen> {
                             ),
                             title: Text("Send Feedback"),
                             trailing: Icon(Icons.arrow_forward_ios, size: 12),
+                            onTap: ()=>Navigator.push(context, MaterialPageRoute(builder: (context) => Feedbackscreen(),)),
                           ),
                         ],
                       ),
@@ -291,7 +294,7 @@ class _ProfilescreenState extends State<Profilescreen> {
                                 backgroundColor: Colors.red,
                               ),
                               onPressed: () {
-                                onhandleLogout(context);
+                                onhandleLogout(context,LoginScreen());
                               },
                               child: Text(
                                 "Logout",

@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:queueless/admin/AdminHomePage.dart';
 import 'package:queueless/admin/LoginScreen.dart';
 import 'package:http/http.dart' as http;
 import 'package:queueless/constant/env.dart';
@@ -71,7 +70,7 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
     });
     try {
       final response = await http.post(
-        Uri.parse("$BaseUrl/customer/auth/login"),
+        Uri.parse("$BaseUrl/admin/auth/signup"),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'name': nameController.text.toString(),
@@ -87,14 +86,14 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
                 content: Text(
                   "Successfully account created...redirecting to Loginscreen",
                 ),
-                duration: Duration(seconds: 2),
+                duration: Duration(seconds: 1),
               ),
             )
             .closed
             .then(
               (v) => Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => Adminhomepage()),
+                MaterialPageRoute(builder: (context) => AdminLoginScreen()),
               ),
             );
       }

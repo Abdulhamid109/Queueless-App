@@ -3,6 +3,7 @@ import 'package:queueless/Customer/AboutusScreen.dart';
 import 'package:queueless/Customer/ContactScreen.dart';
 import 'package:queueless/Customer/FeedbackScreen.dart';
 import 'package:queueless/Customer/HomeScreen.dart';
+import 'package:queueless/Customer/LoginScreen.dart';
 import 'package:queueless/Customer/ProfileScreen.dart';
 import 'package:queueless/helper/handleLogoutFunctionality.dart';
 
@@ -67,7 +68,7 @@ class _CustomerdrawerState extends State<Customerdrawer> {
                   ),
                 ),
                 onPressed: () {
-                  onhandleLogout(context);
+                  onhandleLogout(context,LoginScreen());
                 },
                 child: Text("Logout", style: TextStyle(color: Colors.white)),
               ),
