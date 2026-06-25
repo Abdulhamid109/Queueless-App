@@ -602,6 +602,7 @@ class _BusinessinformationState extends State<Businessinformation> {
                                 ),
                               ),
                             ),
+                            
                             SizedBox(height: height * 0.01),
                             TextFormField(
                               controller: website,

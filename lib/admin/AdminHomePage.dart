@@ -5,6 +5,7 @@ import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:queueless/Widgets/AdminAppBar.dart';
 import 'package:queueless/Widgets/AdminDrawer.dart';
 import 'package:queueless/admin/AnalyticsPage.dart';
+import 'package:queueless/admin/BusinessEditPage.dart';
 import 'package:queueless/admin/BusinessOnboarding/businessInformation.dart';
 import 'package:http/http.dart' as http;
 import 'package:queueless/constant/env.dart';
@@ -202,26 +203,57 @@ class _AdminhomepageState extends State<Adminhomepage> {
                           ],
                         ),
                         SizedBox(height: 14),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => Analyticspage(bussinessId: data["_id"],businessName: data["BusinessName"],businessAddress: data["BusinessAddress"],),));
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF1A1A2E),
-                              foregroundColor: const Color(0xFFF5F0EB),
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.push(context, MaterialPageRoute(builder: (context) => Analyticspage(bussinessId: data["_id"],businessName: data["BusinessName"],businessAddress: data["BusinessAddress"],),));
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.grey,
+                                    foregroundColor: const Color(0xFFF5F0EB),
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    padding: EdgeInsets.symmetric(vertical: 12),
+                                  ),
+                                  child: Text(
+                                    "Manage",
+                                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                                  ),
+                                ),
                               ),
-                              padding: EdgeInsets.symmetric(vertical: 12),
                             ),
-                            child: Text(
-                              "Manage",
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                            SizedBox(width: 5,),
+                            Expanded(
+                              child: SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.push(context, MaterialPageRoute(builder: (context) => Businesseditpage(bid: data["_id"]),));
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.blueAccent.shade100,
+                                    foregroundColor: const Color(0xFFF5F0EB),
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    padding: EdgeInsets.symmetric(vertical: 12),
+                                  ),
+                                  child: Text(
+                                    "Edit",
+                                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
+                          
+                          ],
                         ),
                       ],
                     ),

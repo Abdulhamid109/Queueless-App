@@ -135,9 +135,6 @@ class _HomescreenState extends State<Homescreen> {
               ],
               onSelected: (value) => {
                 Navigator.push(context, MaterialPageRoute(builder: (context) => Businesscategoryscreen(bCategory: value!),)),
-                setState(() {
-                  value = "";
-                })
               },
             ),
             SizedBox(height: height * 0.05),
