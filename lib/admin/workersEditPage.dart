@@ -36,7 +36,7 @@ class _WorkersEditPageState extends State<WorkersEditPage> {
         });
         return;
       }
-    throw Exception("Status ${response.statusCode}: ${response.body}"); // 👈 more detail
+    throw Exception("Status ${response.statusCode}: ${response.body}"); 
     } catch (e,stack) {
       print("Error occured => $e");
       print(stack);
@@ -58,6 +58,29 @@ class _WorkersEditPageState extends State<WorkersEditPage> {
         final jsonbody = jsonDecode(response.body);
         return jsonbody["data"];
       }
+    } catch (e) {
+      print("Error => $e");
+    }
+  }
+
+  Future updateWorkers (String wid,String workerName,String WorkerEmail) async{
+    try {
+      final response = await http.put(Uri.parse("$BaseUrl/admin/updateWorkerData/$wid"),
+      headers: {'Content-Type':'application/json'},
+      body: jsonEncode({
+        "workerName":editWorkerName.text.isEmpty?workerName:editWorkerName.text,
+        "WorkerEmail":editWorkerEmail.text.isEmpty?WorkerEmail:editWorkerEmail.text
+      })
+      );
+      if(response.statusCode==200){
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            duration: Duration(seconds: 1),
+            content: Center(child: Text("Successfully updated the workerInfo Info")))
+        );
+      }
+      throw Exception("response : ${response.body} - ${response.statusCode}");
+    
     } catch (e) {
       print("Error => $e");
     }
@@ -189,7 +212,9 @@ if (WorkerList.isEmpty) {
                                         child: Text("Close"),
                                       ),
                                       TextButton(
-                                        onPressed: () {},
+                                        onPressed: () async{
+                                          await updateWorkers(workerData["_id"], workerData["workerName"], workerData["WorkerEmail"]).then((val)=>Navigator.pop(context));
+                                        },
                                         child: Text("Update"),
                                       ),
                                     ],
