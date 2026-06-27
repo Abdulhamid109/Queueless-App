@@ -1,12 +1,12 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:jwt_decoder/jwt_decoder.dart';
+// import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:queueless/Widgets/AdminAppBar.dart';
 import 'package:queueless/Widgets/AdminDrawer.dart';
 import 'package:queueless/constant/env.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+// import 'package:shared_preferences/shared_preferences.dart';
 
 class ServiceEditsPage extends StatefulWidget {
   final String bid;
@@ -40,7 +40,9 @@ class _ServiceEditsPageState extends State<ServiceEditsPage> {
         });
         // return jsonBody["data"];
       }
-      throw Exception("Something went wrong");
+      if(response.statusCode!=200){
+        throw Exception("Something went wrong => ${response.body} -- ${response.statusCode}");
+      }
     } catch (e) {
       print("error => $e");
       throw "Error => $e";
@@ -72,29 +74,34 @@ class _ServiceEditsPageState extends State<ServiceEditsPage> {
       updateLoading = true;
     });
     try {
-      
+      // print("🟡Step 1 : Before https");
       final response = await http.put(Uri.parse("$BaseUrl/admin/updateServiceData/$serviceID"),
         headers: {'Content-Type':'application/json'},
         body: jsonEncode({
-          "name":editServiceName.text.isEmpty ? name:editServiceName,
+          "name":editServiceName.text.isEmpty ? name:editServiceName.text.toString(),
           "AvgDurationPerCustomer":editCustomerDuration.text.isEmpty?AvgDurationPerCustomer:int.parse(editCustomerDuration.text.toString()),
           "ChargesPerService":editServiceCharge.text.isEmpty?ChargesPerService:int.parse(editServiceCharge.text.toString())
         })
       );
+      
+      // print("🟡Step 2 : After https");
       if(response.statusCode==200){
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             duration: Duration(seconds: 1),
             content: Center(child: Text("Successfully updated the Service Info")))
         );
-        Navigator.pop(context);
+        // Navigator.pop(context);
       }
-      throw new Exception("response : ${response.body} - ${response.statusCode}");
+      if(response.statusCode!=200){
+        throw Exception("response : ${response.body} - ${response.statusCode}");
+      }
     } catch (e) {
       print("error => $e");
     } finally{
       setState(() {
         updateLoading=false;
+        getAllServices();
       });
     }
   }
@@ -175,7 +182,7 @@ class _ServiceEditsPageState extends State<ServiceEditsPage> {
                               showDialog(
                                 barrierDismissible: false,
                                 context: context,
-                                builder: (context) {
+                                builder: (dialogcontext) {
                                   return AlertDialog(
                                     title: Center(
                                       child: Text("Edit Service Data"),
@@ -219,6 +226,7 @@ class _ServiceEditsPageState extends State<ServiceEditsPage> {
                                               mainAxisSize: MainAxisSize.min,
                                               children: <Widget>[
                                                 TextField(
+                                                  
                                                   controller: editServiceName,
                                                   decoration: InputDecoration(
                                                     labelText: "Service Name",
@@ -230,6 +238,7 @@ class _ServiceEditsPageState extends State<ServiceEditsPage> {
                                                 ),
                                                 SizedBox(height: height * 0.01),
                                                 TextField(
+                                                  keyboardType: TextInputType.numberWithOptions(),
                                                   controller:
                                                       editCustomerDuration,
                                                   decoration: InputDecoration(
@@ -243,6 +252,7 @@ class _ServiceEditsPageState extends State<ServiceEditsPage> {
                                                 ),
                                                 SizedBox(height: height * 0.01),
                                                 TextField(
+                                                  keyboardType: TextInputType.numberWithOptions(),
                                                   controller: editServiceCharge,
                                                   decoration: InputDecoration(
                                                     labelText: "Service Charge",
@@ -273,7 +283,7 @@ class _ServiceEditsPageState extends State<ServiceEditsPage> {
                                             ),
                                             TextButton(
                                               onPressed: () async{
-                                                await updateServiceData(serviceData["_id"],serviceData["name"],serviceData["AvgDurationPerCustomer"],serviceData["ChargesPerService"]).then((value) => Navigator.pop(context),);
+                                                await updateServiceData(serviceData["_id"],serviceData["name"],serviceData["AvgDurationPerCustomer"],serviceData["ChargesPerService"]).then((value) => Navigator.pop(dialogcontext),);
                                               },
                                               child: updateLoading?Center(child: CircularProgressIndicator(),):Text("Update")
                                             ),
