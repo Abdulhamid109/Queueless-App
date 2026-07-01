@@ -6,6 +6,8 @@ import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:queueless/Customer/HomeScreen.dart';
 import 'package:queueless/Customer/LoginScreen.dart';
 import 'package:queueless/admin/AdminHomePage.dart';
+import 'package:queueless/constant/env.dart';
+import 'package:queueless/helper/socketservice.dart';
 import 'package:queueless/models/WorkerInformationModal.dart';
 import 'package:queueless/models/businessInformationModal.dart';
 import 'package:queueless/models/serviceInformationModal.dart';
@@ -25,7 +27,9 @@ Future<void> main() async {
   await Hive.openBox<Timeinformationmodal>("TimeBox");
   SharedPreferences pref = await SharedPreferences.getInstance();
   await dotenv.load(fileName: '.env');
+  SocketService().init(serverUrl: BaseUrl);
   runApp(MyApp(token: pref.getString("token")));
+
 }
 
 class MyApp extends StatelessWidget {
@@ -35,7 +39,6 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     bool isvalidtoken = token != null && !JwtDecoder.isExpired(token!);
-
     Widget screen;
 
     if (isvalidtoken) {
@@ -49,6 +52,7 @@ class MyApp extends StatelessWidget {
     } else {
       screen = LoginScreen();
     }
+
     return MaterialApp(
       theme: ThemeData(
         scaffoldBackgroundColor: Color.fromRGBO(249, 250, 251, 1),

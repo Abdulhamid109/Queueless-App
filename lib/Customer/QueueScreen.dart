@@ -96,7 +96,35 @@ class _QueuescreenState extends State<Queuescreen> {
     }
   }
 
-  Future JoinQueue() async {}
+  Future JoinQueue() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString("token");
+      final decodedData = JwtDecoder.decode(token!);
+      final cid = decodedData["uid"];
+      final response = await http.post(Uri.parse("$BaseUrl/customer/joinQueue/${widget.bid}/$cid"),
+      headers: {'Content-Type':'application/json'},
+      body: jsonEncode({
+        "serviceIds":allServiceDetails
+      })
+      );
+
+      if(response.statusCode==200){
+        // an socket instance we will be gettign here
+
+      }
+    } catch (e) {
+      print("Error => $e");
+    }
+  }
+
+  Future GetTotalQueueCount() async{
+    try {
+      
+    } catch (e) {
+      print("error =>$e");
+    }
+  }
 
   Future<void> addBusinessFeedback() async {
     try {
@@ -143,7 +171,6 @@ class _QueuescreenState extends State<Queuescreen> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     TimeDetails = getTimeData();
   }
