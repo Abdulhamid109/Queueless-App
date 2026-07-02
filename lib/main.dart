@@ -12,6 +12,7 @@ import 'package:queueless/models/WorkerInformationModal.dart';
 import 'package:queueless/models/businessInformationModal.dart';
 import 'package:queueless/models/serviceInformationModal.dart';
 import 'package:queueless/models/timeInformationModal.dart';
+import 'package:queueless/worker/workerhomeScreen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> main() async {
@@ -46,7 +47,9 @@ class MyApp extends StatelessWidget {
       String role = decodedToken["role"];
       if (role == "user") {
         screen = Homescreen();
-      } else {
+      } else if(role == "worker") {
+        screen = Workerhomescreen();
+      } else{
         screen = Adminhomepage();
       }
     } else {

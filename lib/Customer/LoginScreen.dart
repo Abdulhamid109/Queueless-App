@@ -371,35 +371,35 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _socialButton(String letter, String label, {IconData? icon}) {
-    return OutlinedButton(
-      onPressed: () {},
-      style: OutlinedButton.styleFrom(
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF4A4A4A),
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        side: const BorderSide(color: border, width: 1.5),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          icon != null
-              ? Icon(icon, size: 16, color: const Color(0xFF4A4A4A))
-              : Text(
-                  letter,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _socialButton(String letter, String label, {IconData? icon}) {
+  //   return OutlinedButton(
+  //     onPressed: () {},
+  //     style: OutlinedButton.styleFrom(
+  //       backgroundColor: Colors.white,
+  //       foregroundColor: const Color(0xFF4A4A4A),
+  //       padding: const EdgeInsets.symmetric(vertical: 12),
+  //       side: const BorderSide(color: border, width: 1.5),
+  //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  //     ),
+  //     child: Row(
+  //       mainAxisAlignment: MainAxisAlignment.center,
+  //       children: [
+  //         icon != null
+  //             ? Icon(icon, size: 16, color: const Color(0xFF4A4A4A))
+  //             : Text(
+  //                 letter,
+  //                 style: const TextStyle(
+  //                   fontWeight: FontWeight.bold,
+  //                   fontSize: 14,
+  //                 ),
+  //               ),
+  //         const SizedBox(width: 6),
+  //         Text(
+  //           label,
+  //           style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 }

@@ -6,6 +6,7 @@ import 'package:queueless/Widgets/CustomerAppbar.dart';
 import 'package:queueless/Widgets/CustomerDrawer.dart';
 import 'package:http/http.dart' as http;
 import 'package:queueless/constant/env.dart';
+import 'package:queueless/helper/socketservice.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Queuescreen extends StatefulWidget {
@@ -27,6 +28,7 @@ class _QueuescreenState extends State<Queuescreen> {
   Future<Map<String, dynamic>>? TimeDetails;
   TextEditingController titleController = TextEditingController();
   TextEditingController decriptionController = TextEditingController();
+  SocketService socketIO = SocketService();
   // bool? isServiceSelected = false;
   // int? selectedIndex;
   Set<int> selectedIndex = {};
@@ -70,6 +72,42 @@ class _QueuescreenState extends State<Queuescreen> {
   List allServiceDetails = [];
   bool serviceDetailsLoading = false;
   bool loadedDetails = false;
+
+  Future getRealtimeQueueUpdates() async {
+    try {
+      debugPrint("Working!!");
+      final response = await http.get(
+        Uri.parse("$BaseUrl/customer/getTotalQueueCount/${widget.bid}"),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      debugPrint("Working!!!");
+
+      // socketIO.on("workerQueueUpdated", (data) {
+      //   debugPrint("🟡 Debuging => ${data.length}");
+      // },);
+
+      if (response.statusCode == 200) {
+        final resbody = jsonDecode(response.body);
+        debugPrint("🟡 Data => $resbody");
+        socketIO.on("workerQueueUpdated", (data) {
+          debugPrint(
+            "🟡 received => $data",
+          ); // this fires AFTER the API call below
+          setState(() {
+            // update your UI with data
+          });
+        });
+      }
+
+      if (response.statusCode != 200) {
+        debugPrint("🟡 Error => ${response.body} -- ${response.statusCode}");
+      }
+    } catch (e) {
+      print("Error => $e");
+    }
+  }
+
   Future<void> getServices() async {
     setState(() {
       serviceDetailsLoading = true;
@@ -102,29 +140,21 @@ class _QueuescreenState extends State<Queuescreen> {
       final token = prefs.getString("token");
       final decodedData = JwtDecoder.decode(token!);
       final cid = decodedData["uid"];
-      final response = await http.post(Uri.parse("$BaseUrl/customer/joinQueue/${widget.bid}/$cid"),
-      headers: {'Content-Type':'application/json'},
-      body: jsonEncode({
-        "serviceIds":allServiceDetails
-      })
+      final response = await http.post(
+        Uri.parse("$BaseUrl/customer/joinQueue/${widget.bid}/$cid"),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({"serviceIds": allServiceDetails}),
       );
 
-      if(response.statusCode==200){
+      if (response.statusCode == 200) {
         // an socket instance we will be gettign here
-
       }
     } catch (e) {
       print("Error => $e");
     }
   }
 
-  Future GetTotalQueueCount() async{
-    try {
-      
-    } catch (e) {
-      print("error =>$e");
-    }
-  }
+
 
   Future<void> addBusinessFeedback() async {
     try {
@@ -169,10 +199,32 @@ class _QueuescreenState extends State<Queuescreen> {
     }
   }
 
+  void _registerListeners() {
+    socketIO.off("workerQueueUpdated");
+    socketIO.on("workerQueueUpdated", (data) {
+      debugPrint("🟡 received => $data"); // this fires AFTER the API call below
+      setState(() {
+        // update your UI with data
+      });
+    });
+  }
+
+  void _joinBusinessRoom() {
+  socketIO.onceConnected(() {
+    socketIO.emit("JoinBusiness", widget.bid);
+    debugPrint("Emitted JoinBusiness with bid: ${widget.bid}");
+    getRealtimeQueueUpdates();
+  });
+}
   @override
   void initState() {
     super.initState();
     TimeDetails = getTimeData();
+    // socketIO.emit("JoinBusiness", widget.bid);
+    // getRealtimeQueueUpdates();
+    socketIO.init(serverUrl: BaseUrl);
+    _registerListeners();
+    _joinBusinessRoom();
   }
 
   @override

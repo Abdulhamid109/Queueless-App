@@ -49,10 +49,19 @@ class SocketService {
       print('Socket not connected. Cannot emit: $event');
     }
   }
+  void onceConnected(void Function() callback) {
+    if (socket.connected) {
+      callback();
+    } else {
+      socket.onConnect((_) => callback());
+    }
+  }
 
   void on(String event, Function(dynamic) handler) {
     socket.on(event, handler);
   }
+
+
 
   void off(String event) {
     socket.off(event);

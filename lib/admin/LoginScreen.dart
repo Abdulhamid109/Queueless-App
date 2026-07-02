@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:queueless/admin/AdminHomePage.dart';
 import 'package:queueless/admin/SignupScreen.dart';
 import 'package:queueless/constant/env.dart';
+import 'package:queueless/worker/workerloginScreen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 
@@ -332,6 +333,40 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                       ),
                     ),
                   ),
+
+                  SizedBox(height: 10,),
+                  Center(
+                    child: RichText(
+                      text: TextSpan(
+                        style: const TextStyle(color: textGrey, fontSize: 14),
+
+                        children: [
+                          const TextSpan(text: "Login as Worker ? "),
+
+                          TextSpan(
+                            text: "Login",
+
+                            style: const TextStyle(
+                              color: blue,
+                              fontWeight: FontWeight.bold,
+                            ),
+
+                            recognizer: TapGestureRecognizer()
+                              ..onTap = () {
+                                Navigator.push(
+                                  context,
+
+                                  MaterialPageRoute(
+                                    builder: (context) => Workerloginscreen(),
+                                  ),
+                                );
+                              },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                
                 ],
               ),
             ),
