@@ -32,7 +32,6 @@ class Adminappbar extends StatelessWidget
             icon: const Icon(
               Icons.person,
               size: 20,
-
             ),
           ),
         ),

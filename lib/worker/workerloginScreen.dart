@@ -2,8 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:queueless/admin/AdminHomePage.dart';
 import 'package:queueless/constant/env.dart';
+import 'package:queueless/worker/workerhomeScreen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Workerloginscreen extends StatefulWidget {
@@ -32,6 +32,7 @@ class _WorkerloginscreenState extends State<Workerloginscreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Center(child: Text("Successfully logged"),)),
         );
+        Navigator.push(context, MaterialPageRoute(builder: (context) => Workerhomescreen(),));
       }
 
       if(response.statusCode!=200){
@@ -74,6 +75,7 @@ class _WorkerloginscreenState extends State<Workerloginscreen> {
               SizedBox(height: height*.02,),
 
               TextField(
+                controller: emailController,
                 decoration: InputDecoration(
                   labelText: "Worker Email",
                   enabledBorder: OutlineInputBorder(),
@@ -90,7 +92,7 @@ class _WorkerloginscreenState extends State<Workerloginscreen> {
                     backgroundColor: Colors.blue
                   ),
                   onPressed: ()async{
-                    await handleLogin().then((value) => Navigator.push(context, MaterialPageRoute(builder: (context) => Adminhomepage(),)),);
+                    await handleLogin();
                   }, child: Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Text("Login",style: TextStyle(color: Colors.white),),

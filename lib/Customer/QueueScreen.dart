@@ -75,25 +75,17 @@ class _QueuescreenState extends State<Queuescreen> {
 
   Future getRealtimeQueueUpdates() async {
     try {
-      debugPrint("Working!!");
       final response = await http.get(
         Uri.parse("$BaseUrl/customer/getTotalQueueCount/${widget.bid}"),
         headers: {'Content-Type': 'application/json'},
       );
 
-      debugPrint("Working!!!");
-
-      // socketIO.on("workerQueueUpdated", (data) {
-      //   debugPrint("🟡 Debuging => ${data.length}");
-      // },);
-
       if (response.statusCode == 200) {
-        final resbody = jsonDecode(response.body);
-        debugPrint("🟡 Data => $resbody");
+        // final resbody = jsonDecode(response.body);
         socketIO.on("workerQueueUpdated", (data) {
           debugPrint(
             "🟡 received => $data",
-          ); // this fires AFTER the API call below
+          ); 
           setState(() {
             // update your UI with data
           });
@@ -134,7 +126,7 @@ class _QueuescreenState extends State<Queuescreen> {
     }
   }
 
-  Future JoinQueue() async {
+  Future joinQueue() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       final token = prefs.getString("token");
@@ -147,10 +139,15 @@ class _QueuescreenState extends State<Queuescreen> {
       );
 
       if (response.statusCode == 200) {
+        _joinUserRoom(cid);
+        socketIO.on("queue-estimated-time", (data) {
+          debugPrint("The Estimated waiting time for the worker is => $data");
+        },);
+        //store the estimation time in the sharedpref
         // an socket instance we will be gettign here
       }
     } catch (e) {
-      print("Error => $e");
+      debugPrint("Error => $e");
     }
   }
 
@@ -216,15 +213,23 @@ class _QueuescreenState extends State<Queuescreen> {
     getRealtimeQueueUpdates();
   });
 }
+  
+  void _joinUserRoom(String uid)async{
+    socketIO.onceConnected((){
+      socketIO.emit("JoinUser",uid);
+      debugPrint("Emitted the user with uid as $uid");
+
+    });
+  }
+  
+
   @override
   void initState() {
     super.initState();
     TimeDetails = getTimeData();
-    // socketIO.emit("JoinBusiness", widget.bid);
-    // getRealtimeQueueUpdates();
     socketIO.init(serverUrl: BaseUrl);
-    _registerListeners();
     _joinBusinessRoom();
+    _registerListeners();
   }
 
   @override
