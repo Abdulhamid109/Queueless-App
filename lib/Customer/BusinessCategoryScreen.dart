@@ -68,9 +68,13 @@ class _BusinesscategoryscreenState extends State<Businesscategoryscreen> {
 
       final responseBody = jsonDecode(response.body);
       if (response.statusCode == 200) {
+
         setState(() {
           allbusiness = responseBody["data"];
         });
+      }
+      if(response.statusCode!=200){
+        throw Exception("Error => ${response.statusCode} -- ${response.body}");
       }
     } catch (e) {
       print("Error Occured! => $e");
