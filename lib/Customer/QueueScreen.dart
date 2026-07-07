@@ -77,6 +77,7 @@ class _QueuescreenState extends State<Queuescreen> {
   bool queuePresency = false;
   String EWT = "";
   String Postion = "";
+  DateTime dateTime = DateTime.now();
 
 
   Future getRealtimeQueueUpdates() async {
@@ -84,7 +85,7 @@ class _QueuescreenState extends State<Queuescreen> {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       final qid = prefs.getString("queueId-${widget.bid}");
       if (qid == null || qid.isEmpty) return;
-
+      // qid ki date should be equal to current date
       debugPrint("🟡we are here! => ${qid}");
 
 
@@ -97,12 +98,19 @@ class _QueuescreenState extends State<Queuescreen> {
         debugPrint("🟡and we are here!");
         final resbody = jsonDecode(response.body);
         debugPrint("QueueData => ${resbody["data"]["expectedStartTime"]}");
+        debugPrint("QueueData Date=> ${resbody["data"]["date"]}");
         setState(() {
           DateTime parsedDate = DateTime.parse(resbody["data"]["expectedStartTime"]);
+          DateTime parsedDate2 = DateTime.parse(resbody["data"]["date"]);
           String formatted = DateFormat("dd MMM yyyy, hh:mm a").format(parsedDate);
+          String formattedDate = DateFormat("M/d/yyyy").format(parsedDate);
+          if(formattedDate!=DateFormat("M/d/yyyy").format(dateTime)){
+            prefs.remove("queueId-${widget.bid}");
+          }else{
           queuePresency=true;
           EWT = formatted;
           Postion = resbody["data"]["CurrentPostion"].toString();
+          }
         });
         
       }
@@ -261,6 +269,7 @@ class _QueuescreenState extends State<Queuescreen> {
 
       if (response.statusCode == 200) {
         final resbody = jsonDecode(response.body);
+        debugPrint("WorkerData - $resbody");
         setState(() {
           allworkers = resbody["data"];
         });
@@ -273,6 +282,8 @@ class _QueuescreenState extends State<Queuescreen> {
       debugPrint("error => $e");
     }
   }
+
+
 
   @override
   void initState() {
@@ -441,8 +452,8 @@ class _QueuescreenState extends State<Queuescreen> {
                               Opacity(opacity: 0.5, child: Text("Queue")),
 
                               Text(
-                                "Disconnected",
-                                style: TextStyle(color: Colors.red),
+                                "Refresh",
+                                style: TextStyle(color: Colors.blue),
                               ),
                             ],
                           ),
