@@ -97,13 +97,14 @@ class _QueuescreenState extends State<Queuescreen> {
       if (response.statusCode == 200) {
         debugPrint("🟡and we are here!");
         final resbody = jsonDecode(response.body);
+        debugPrint("QueueData common=> ${resbody["data"]["UserId"]}");
         debugPrint("QueueData => ${resbody["data"]["expectedStartTime"]}");
         debugPrint("QueueData Date=> ${resbody["data"]["date"]}");
         setState(() {
           DateTime parsedDate = DateTime.parse(resbody["data"]["expectedStartTime"]);
           DateTime parsedDate2 = DateTime.parse(resbody["data"]["date"]);
-          String formatted = DateFormat("dd MMM yyyy, hh:mm a").format(parsedDate);
-          String formattedDate = DateFormat("M/d/yyyy").format(parsedDate);
+          String formatted = DateFormat("dd MMM yyyy, hh:mm a").format(parsedDate.toLocal());
+          String formattedDate = DateFormat("M/d/yyyy").format(parsedDate2.toLocal());
           if(formattedDate!=DateFormat("M/d/yyyy").format(dateTime)){
             prefs.remove("queueId-${widget.bid}");
           }else{
@@ -169,7 +170,7 @@ class _QueuescreenState extends State<Queuescreen> {
         // });
         // debugPrint("In between");
         final resbody = jsonDecode(response.body);
-        final qid = resbody["data"];
+        final qid = resbody["data"]["qid"];
         SharedPreferences prefs = await SharedPreferences.getInstance();
         prefs.setString("queueId-${widget.bid}", qid);
         await getRealtimeQueueUpdates();
@@ -478,20 +479,20 @@ class _QueuescreenState extends State<Queuescreen> {
                               itemCount: allworkers.length,
                               itemBuilder: (context, index) {
                                 final workers = allworkers[index];
-                                // debugPrint("Wokrers $workers");
+                                debugPrint("Wokrers $workers");
                                 return Padding(
                                   padding: const EdgeInsets.all(8.0),
                                   child: Card(
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                  color: workers["WorkStatus"]=="inactive"?Colors.red.shade100:Colors.green.shade100,
+                                  color: workers["status"]=="inactive"?Colors.red.shade100:Colors.green.shade100,
                                   child: ListTile(
                                     leading: CircleAvatar(child: Icon(Icons.person)),
                                     title: Text(workers["workerName"]),
                                     subtitle: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text("Total Customers : ${workers["queueInfo"].length}"),
-                                        Text("Status : ${workers["WorkStatus"]}")
+                                        Text("Total Customers : ${workers["queueCount"]}"),
+                                        Text("Status : ${workers["status"]}")
                                       ],
                                     ),
                                   )
