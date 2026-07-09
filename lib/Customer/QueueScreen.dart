@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cherry_toast/cherry_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
@@ -30,8 +31,7 @@ class _QueuescreenState extends State<Queuescreen> {
   TextEditingController titleController = TextEditingController();
   TextEditingController decriptionController = TextEditingController();
   SocketService socketIO = SocketService();
-  // bool? isServiceSelected = false;
-  // int? selectedIndex;
+
   Set<int> selectedIndex = {};
   List serviceIds = [];
   List allworkers = [];
@@ -77,50 +77,65 @@ class _QueuescreenState extends State<Queuescreen> {
   bool queuePresency = false;
   String EWT = "";
   String Postion = "";
-  DateTime dateTime = DateTime.now();
+  // DateTime dateTime = DateTime.now();
+  bool userJoined = false;
 
 
   Future getRealtimeQueueUpdates() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      final qid = prefs.getString("queueId-${widget.bid}");
-      if (qid == null || qid.isEmpty) return;
-      // qid ki date should be equal to current date
-      debugPrint("🟡we are here! => ${qid}");
-
-
+      final token = prefs.getString("token");
+      final decodedToken = JwtDecoder.decode(token!);
+      final uid = decodedToken["uid"];
+      debugPrint("UID => $uid");
       final response = await http.get(
-        Uri.parse("$BaseUrl/customer/getTotalQueueCount/$qid"),
+        Uri.parse("$BaseUrl/customer/getTotalQueueCount/${widget.bid}/$uid"),
         headers: {'Content-Type': 'application/json'},
       );
 
       if (response.statusCode == 200) {
-        debugPrint("🟡and we are here!");
         final resbody = jsonDecode(response.body);
-        debugPrint("QueueData common=> ${resbody["data"]["UserId"]}");
-        debugPrint("QueueData => ${resbody["data"]["expectedStartTime"]}");
-        debugPrint("QueueData Date=> ${resbody["data"]["date"]}");
+
         setState(() {
-          DateTime parsedDate = DateTime.parse(resbody["data"]["expectedStartTime"]);
-          DateTime parsedDate2 = DateTime.parse(resbody["data"]["date"]);
-          String formatted = DateFormat("dd MMM yyyy, hh:mm a").format(parsedDate.toLocal());
-          String formattedDate = DateFormat("M/d/yyyy").format(parsedDate2.toLocal());
-          if(formattedDate!=DateFormat("M/d/yyyy").format(dateTime)){
-            prefs.remove("queueId-${widget.bid}");
-          }else{
-          queuePresency=true;
+          DateTime parsedDate = DateTime.parse(
+            resbody["data"]["expectedStartTime"],
+          );
+          // DateTime parsedDate2 = DateTime.parse(resbody["data"]["date"]);
+          String formatted = DateFormat(
+            "dd MMM yyyy, hh:mm a",
+          ).format(parsedDate.toLocal());
+
+          queuePresency = true;
           EWT = formatted;
           Postion = resbody["data"]["CurrentPostion"].toString();
-          }
+          userJoined=true;
+        debugPrint("Formatted Date-String $formatted");
         });
-        
+
       }
 
       if (response.statusCode != 200) {
-        debugPrint("🟡 Error => ${response.body} -- ${response.statusCode}");
+        final body = jsonDecode(response.body);
+        debugPrint("Error => $body");
+        CherryToast.error(
+          title: Text(body["error"]),
+        ).show(context);
+        setState(() {
+    queuePresency = false;  
+    userJoined = false;      
+    EWT = "";
+    Postion = "";
+  });
+
       }
     } catch (e) {
       print("Error => $e");
+      if (mounted) {
+    setState(() {
+      queuePresency = false;
+      userJoined = false;
+    });
+  }
     }
   }
 
@@ -152,7 +167,6 @@ class _QueuescreenState extends State<Queuescreen> {
 
   Future joinQueue() async {
     try {
-      debugPrint("Started");
       SharedPreferences prefs = await SharedPreferences.getInstance();
       final token = prefs.getString("token");
       final decodedData = JwtDecoder.decode(token!);
@@ -165,31 +179,29 @@ class _QueuescreenState extends State<Queuescreen> {
 
       if (response.statusCode == 200) {
         _joinUserRoom(cid);
-        // socketIO.on("queue-estimated-time", (data) {
-        //   debugPrint("The Estimated waiting time for the worker is => $data");
-        // });
-        // debugPrint("In between");
-        final resbody = jsonDecode(response.body);
-        final qid = resbody["data"]["qid"];
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        prefs.setString("queueId-${widget.bid}", qid);
+        debugPrint("Are u here!");
+        CherryToast.success(title: Text("Successfully joined the Queue")).show(context);
+        userJoined=true;
         await getRealtimeQueueUpdates();
         Navigator.pop(context);
-        //store the estimation time in the sharedpref
-        // an socket instance we will be gettign here
       }
 
       if (response.statusCode != 200) {
-        debugPrint("Error -> ${response.statusCode} -- ${response.body}");
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: Colors.red,
-            content: Center(child: Text("${jsonDecode(response.body)["error"]}",style: TextStyle(color: Colors.white),)))
+            content: Center(
+              child: Text(
+                "${jsonDecode(response.body)["error"]}",
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ),
         );
         Navigator.pop(context);
       }
     } catch (e) {
-      debugPrint("Error => $e");
+      print("Error => $e");
     }
   }
 
@@ -221,7 +233,7 @@ class _QueuescreenState extends State<Queuescreen> {
       if (response.statusCode != 200) {
         print("Error => ${response.body} - ${response.statusCode}");
         final decodedError = jsonDecode(response.body);
-        // print(decodedError["error"]);
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Center(child: Text(decodedError["error"])),
@@ -239,25 +251,19 @@ class _QueuescreenState extends State<Queuescreen> {
   void _registerListeners() {
     socketIO.off("workerQueueUpdated");
     socketIO.on("workerQueueUpdated", (data) {
-      debugPrint("🟡 received => $data"); // this fires AFTER the API call below
-      setState(() {
-        // update your UI with data
-      });
+      setState(() {});
     });
   }
 
   void _joinBusinessRoom() {
     socketIO.onceConnected(() {
       socketIO.emit("JoinBusiness", widget.bid);
-      debugPrint("Emitted JoinBusiness with bid: ${widget.bid}");
-      getRealtimeQueueUpdates();
     });
   }
 
   void _joinUserRoom(String uid) async {
     socketIO.onceConnected(() {
       socketIO.emit("JoinUser", uid);
-      debugPrint("Emitted the user with uid as $uid");
     });
   }
 
@@ -270,22 +276,47 @@ class _QueuescreenState extends State<Queuescreen> {
 
       if (response.statusCode == 200) {
         final resbody = jsonDecode(response.body);
-        debugPrint("WorkerData - $resbody");
+
         setState(() {
           allworkers = resbody["data"];
         });
+        // await getRealtimeQueueUpdates();
       }
 
       if (response.statusCode != 200) {
         throw Exception("Error => ${response.statusCode} -- ${response.body}");
       }
     } catch (e) {
-      debugPrint("error => $e");
+      print("Error => $e");
     }
   }
 
-
-
+  Future exitQueue() async{
+    try {
+       SharedPreferences prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString("token");
+      final decodedToken = JwtDecoder.decode(token!);
+      final uid = decodedToken["uid"];
+      final response = await http.delete(Uri.parse("$BaseUrl/customer/exitQueue/${widget.bid}/$uid"),
+      headers: {'Content-Type':'application/json'}
+      );
+      if(response.statusCode==200){
+        CherryToast.success(
+          title: Text("Left from Queue"),
+        ).show(context);
+        userJoined=false;
+        await getRealtimeQueueUpdates();
+      }
+      if(response.statusCode!=200){
+        CherryToast.error(
+          title: Text("Something went wrong"),
+        ).show(context);
+        throw Exception("Error => ${response.body} -- ${response.statusCode}");
+      }
+    } catch (e) {
+      print("Error =>$e");
+    }
+  }
   @override
   void initState() {
     super.initState();
@@ -294,6 +325,7 @@ class _QueuescreenState extends State<Queuescreen> {
     _joinBusinessRoom();
     _registerListeners();
     getAllWorkers();
+    getRealtimeQueueUpdates();
   }
 
   @override
@@ -452,9 +484,19 @@ class _QueuescreenState extends State<Queuescreen> {
                             children: [
                               Opacity(opacity: 0.5, child: Text("Queue")),
 
-                              Text(
-                                "Refresh",
-                                style: TextStyle(color: Colors.blue),
+                              GestureDetector(
+                                onTap: ()async{
+                                  CherryToast.info(
+                                    title: Text("Refreshing Queue"),
+                                  ).show(context);
+                                  setState(() {
+                                    getRealtimeQueueUpdates();
+                                  });
+                                },
+                                child: Text(
+                                  "Refresh",
+                                  style: TextStyle(color: Colors.blue),
+                                ),
                               ),
                             ],
                           ),
@@ -462,330 +504,333 @@ class _QueuescreenState extends State<Queuescreen> {
 
                         Divider(thickness: 0.3),
                         SizedBox(height: height * 0.01),
-                        allworkers.isEmpty?
-                        Column(
-                          children: [
-                            Text("Loading"),
-                            CircularProgressIndicator(color: Colors.blue,)
-                          ],
-                        ):Text("Worker & Queue status"),
-                        // SizedBox(height: height * 0.01),
+                        allworkers.isEmpty
+                            ? Column(
+                                children: [
+                                  Text("Loading"),
+                                  CircularProgressIndicator(color: Colors.blue),
+                                ],
+                              )
+                            : Text("Worker & Queue status"),
+
                         Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: SizedBox(
-                            height: allworkers.length==1?height*0.125:height*0.25,
-                            width: height*0.5,
+                            height: allworkers.length == 1
+                                ? height * 0.125
+                                : height * 0.25,
+                            width: height * 0.5,
                             child: ListView.builder(
                               itemCount: allworkers.length,
                               itemBuilder: (context, index) {
                                 final workers = allworkers[index];
-                                debugPrint("Wokrers $workers");
+
                                 return Padding(
                                   padding: const EdgeInsets.all(8.0),
                                   child: Card(
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                  color: workers["status"]=="inactive"?Colors.red.shade100:Colors.green.shade100,
-                                  child: ListTile(
-                                    leading: CircleAvatar(child: Icon(Icons.person)),
-                                    title: Text(workers["workerName"]),
-                                    subtitle: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text("Total Customers : ${workers["queueCount"]}"),
-                                        Text("Status : ${workers["status"]}")
-                                      ],
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
                                     ),
-                                  )
-                                ),
+                                    color: workers["status"] == "inactive"
+                                        ? Colors.red.shade100
+                                        : Colors.green.shade100,
+                                    child: ListTile(
+                                      leading: CircleAvatar(
+                                        child: Icon(Icons.person),
+                                      ),
+                                      title: Text(workers["workerName"]),
+                                      subtitle: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            "Total Customers : ${workers["queueCount"]}",
+                                          ),
+                                          Text("Status : ${workers["status"]}"),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
                                 );
-                            
                               },
-                              ),
-                          ),
-                        ),
-                        queuePresency?
-                        Column(
-                          children: [
-                        SizedBox(height: height*0.01,),
-                            Text("You're enrolled in Queue"),
-                        SizedBox(height: height*0.01,),
-                        Card(
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          color: Colors.white,
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Current Postion : $Postion"),
-                                SizedBox(height: height*0.01,),
-                                Text("Expected Time : $EWT"),
-                              ],
                             ),
                           ),
                         ),
-                          ],
-                        ):Text(""),
+                        queuePresency
+                            ? Column(
+                                children: [
+                                  SizedBox(height: height * 0.01),
+                                  Text("You're enrolled in Queue"),
+                                  SizedBox(height: height * 0.01),
+                                  Card(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    color: Colors.white,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text("Current Postion : $Postion"),
+                                          SizedBox(height: height * 0.01),
+                                          Text("Expected Time : $EWT"),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Text(""),
 
-                          Padding(
-                                          padding: const EdgeInsets.all(8.0),
-                                          child: SizedBox(
-                                            width: double.infinity,
-                                            child: ElevatedButton(
-                                              style: ElevatedButton.styleFrom(
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                        10,
-                                                      ),
-                                                ),
-                                                backgroundColor: Colors.black,
-                                              ),
-                                              onPressed: () async {
-                                                await getServices();
-                                                if (!loadedDetails ||
-                                                    serviceDetailsLoading) {
-                                                  ScaffoldMessenger.of(
-                                                    context,
-                                                  ).showSnackBar(
-                                                    SnackBar(
-                                                      content: Text(
-                                                        "Loading service details kindly wait",
-                                                      ),
-                                                    ),
-                                                  );
-                                                }
-                                                showDialog(
-                                                  barrierColor:
-                                                      Colors.black26,
-                                                  context: context,
-                                                  builder: (context) {
-                                                    return StatefulBuilder(
-                                                      builder: (context, setState) {
-                                                        return AlertDialog(
-                                                          backgroundColor:
-                                                              Colors.white,
-                                                          shape: RoundedRectangleBorder(
-                                                            borderRadius:
-                                                                BorderRadius.circular(
-                                                                  10,
+                        userJoined?
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                backgroundColor: Colors.red,
+                              ),
+                            onPressed: ()async{
+                              await exitQueue();
+                            }, child: Text("Leave Queue",style: TextStyle(color: Colors.white))
+                            ),
+                        )
+                        :Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                backgroundColor: Colors.black,
+                              ),
+                              onPressed: () async {
+                                await getServices();
+                                if (!loadedDetails || serviceDetailsLoading) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        "Loading service details kindly wait",
+                                      ),
+                                    ),
+                                  );
+                                }
+                                showDialog(
+                                  barrierColor: Colors.black26,
+                                  context: context,
+                                  builder: (context) {
+                                    return StatefulBuilder(
+                                      builder: (context, setState) {
+                                        return AlertDialog(
+                                          backgroundColor: Colors.white,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                          ),
+                                          title: Text("Select a Service"),
+                                          content: SizedBox(
+                                            height: height * 0.5,
+                                            width: width * 0.8,
+                                            child: allServiceDetails.isEmpty
+                                                ? Center(
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                          color: Color(
+                                                            0xFFC9A96E,
+                                                          ),
+                                                        ),
+                                                  )
+                                                : ListView.builder(
+                                                    itemCount: allServiceDetails
+                                                        .length,
+
+                                                    itemBuilder: (context, index) {
+                                                      final data =
+                                                          allServiceDetails[index];
+                                                      final isSelected =
+                                                          selectedIndex
+                                                              .contains(index);
+                                                      return ListTile(
+                                                        title: Text(
+                                                          data["name"],
+                                                        ),
+                                                        subtitle: Text(
+                                                          "${data["AvgDurationPerCustomer"]} min · ₹${data["ChargesPerService"]}",
+                                                        ),
+                                                        trailing: ElevatedButton(
+                                                          style: ElevatedButton.styleFrom(
+                                                            shape: RoundedRectangleBorder(
+                                                              borderRadius:
+                                                                  BorderRadius.circular(
+                                                                    10,
+                                                                  ),
+                                                            ),
+                                                            backgroundColor:
+                                                                Colors.blue,
+                                                          ),
+                                                          onPressed: () {
+                                                            setState(() {
+                                                              if (isSelected) {
+                                                                selectedIndex
+                                                                    .remove(
+                                                                      index,
+                                                                    );
+                                                                setState(() {
+                                                                  serviceIds.remove(
+                                                                    data["_id"],
+                                                                  );
+                                                                });
+                                                              } else {
+                                                                selectedIndex
+                                                                    .add(index);
+                                                                serviceIds.add(
+                                                                  data["_id"],
+                                                                );
+                                                              }
+                                                              print(
+                                                                "Selected indices: $selectedIndex",
+                                                              );
+
+                                                              print(
+                                                                "Selected Ids => $serviceIds",
+                                                              );
+                                                            });
+                                                          },
+                                                          child: Text(
+                                                            isSelected
+                                                                ? "Selected "
+                                                                : "Select",
+                                                            style: TextStyle(
+                                                              color:
+                                                                  Colors.white,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        onTap: () {
+                                                          Border(
+                                                            bottom: BorderSide(
+                                                              color:
+                                                                  Colors.black,
+                                                            ),
+                                                          );
+                                                        },
+                                                      );
+                                                    },
+                                                  ),
+                                          ),
+                                          actions: [
+                                            serviceIds.isNotEmpty
+                                                ? TextButton(
+                                                    onPressed: () async {
+                                                      if (serviceIds.length >
+                                                          2) {
+                                                        Navigator.pop(context);
+                                                        final messenger =
+                                                            ScaffoldMessenger.of(
+                                                              context,
+                                                            );
+                                                        messenger.showMaterialBanner(
+                                                          MaterialBanner(
+                                                            backgroundColor:
+                                                                Colors.red,
+                                                            content: Text(
+                                                              "Only 2 services can be selected at a Time",
+                                                              style: TextStyle(
+                                                                color: Colors
+                                                                    .white,
+                                                              ),
+                                                            ),
+                                                            actions: [
+                                                              ElevatedButton(
+                                                                style: ElevatedButton.styleFrom(
+                                                                  backgroundColor:
+                                                                      Colors
+                                                                          .black,
+                                                                  shape: RoundedRectangleBorder(
+                                                                    borderRadius:
+                                                                        BorderRadius.circular(
+                                                                          10,
+                                                                        ),
+                                                                  ),
                                                                 ),
-                                                          ),
-                                                          title: Text(
-                                                            "Select a Service",
-                                                          ),
-                                                          content: SizedBox(
-                                                            height:
-                                                                height * 0.5,
-                                                            width:
-                                                                width * 0.8,
-                                                            child:
-                                                                allServiceDetails
-                                                                    .isEmpty
-                                                                ? Center(
-                                                                    child: CircularProgressIndicator(
-                                                                      color: Color(
-                                                                        0xFFC9A96E,
-                                                                      ),
-                                                                    ),
-                                                                  )
-                                                                : ListView.builder(
-                                                                    itemCount:
-                                                                        allServiceDetails
-                                                                            .length,
-                                                            
-                                                                    itemBuilder:
-                                                                        (
-                                                                          context,
-                                                                          index,
-                                                                        ) {
-                                                                          final data =
-                                                                              allServiceDetails[index];
-                                                                          final isSelected = selectedIndex.contains(
-                                                                            index,
-                                                                          );
-                                                                          return ListTile(
-                                                                            title: Text(
-                                                                              data["name"],
-                                                                            ),
-                                                                            subtitle: Text(
-                                                                              "${data["AvgDurationPerCustomer"]} min · ₹${data["ChargesPerService"]}",
-                                                                            ),
-                                                                            trailing: ElevatedButton(
-                                                                              style: ElevatedButton.styleFrom(
-                                                                                shape: RoundedRectangleBorder(
-                                                                                  borderRadius: BorderRadius.circular(
-                                                                                    10,
-                                                                                  ),
-                                                                                ),
-                                                                                backgroundColor: Colors.blue,
-                                                                              ),
-                                                                              onPressed: () {
-                                                                                setState(
-                                                                                  () {
-                                                                                    if (isSelected) {
-                                                                                      selectedIndex.remove(
-                                                                                        index,
-                                                                                      );
-                                                                                      setState(
-                                                                                        () {
-                                                                                          serviceIds.remove(
-                                                                                            data["_id"],
-                                                                                          );
-                                                                                        },
-                                                                                      );
-                                                                                    } else {
-                                                                                      selectedIndex.add(
-                                                                                        index,
-                                                                                      );
-                                                                                      serviceIds.add(
-                                                                                        data["_id"],
-                                                                                      );
-                                                                                    }
-                                                                                    print(
-                                                                                      "Selected indices: $selectedIndex",
-                                                                                    );
-                                                            
-                                                                                    print(
-                                                                                      "Selected Ids => $serviceIds",
-                                                                                    );
-                                                                                  },
-                                                                                );
-                                                                              },
-                                                                              child: Text(
-                                                                                isSelected
-                                                                                    ? "Selected "
-                                                                                    : "Select",
-                                                                                style: TextStyle(
-                                                                                  color: Colors.white,
-                                                                                ),
-                                                                              ),
-                                                                            ),
-                                                                            onTap: () {
-                                                                              Border(
-                                                                                bottom: BorderSide(
-                                                                                  color: Colors.black,
-                                                                                ),
-                                                                              );
-                                                                            },
-                                                                          );
-                                                                        },
-                                                                  ),
-                                                          ),
-                                                          actions: [
-                                                            serviceIds
-                                                                    .isNotEmpty
-                                                                ? TextButton(
-                                                                    onPressed: () async {
-                                                                      if (serviceIds.length >
-                                                                          2) {
-                                                                        Navigator.pop(
-                                                                          context,
-                                                                        );
-                                                                        final messenger = ScaffoldMessenger.of(
-                                                                          context,
-                                                                        );
-                                                                        messenger.showMaterialBanner(
-                                                                          MaterialBanner(
-                                                                            backgroundColor: Colors.red,
-                                                                            content: Text(
-                                                                              "Only 2 services can be selected at a Time",
-                                                                              style: TextStyle(
-                                                                                color: Colors.white,
-                                                                              ),
-                                                                            ),
-                                                                            actions: [
-                                                                              ElevatedButton(
-                                                                                style: ElevatedButton.styleFrom(
-                                                                                  backgroundColor: Colors.black,
-                                                                                  shape: RoundedRectangleBorder(
-                                                                                    borderRadius: BorderRadius.circular(
-                                                                                      10,
-                                                                                    ),
-                                                                                  ),
-                                                                                ),
-                                                            
-                                                                                onPressed: () {
-                                                                                  messenger.hideCurrentMaterialBanner();
-                                                                                },
-                                                                                child: Text(
-                                                                                  "Close",
-                                                                                  style: TextStyle(
-                                                                                    color: Colors.white,
-                                                                                  ),
-                                                                                ),
-                                                                              ),
-                                                                            ],
-                                                                          ),
-                                                                        );
-                                                                        Future.delayed(
-                                                                          Duration(
-                                                                            seconds: 5,
-                                                                          ),
-                                                                          () {
-                                                                            if (messenger.mounted) {
-                                                                              messenger.hideCurrentMaterialBanner();
-                                                                            }
-                                                                          },
-                                                                        );
-                                                                      } else {
-                                                                        await joinQueue();
-                                                                        // Navigator.pop(context);
-                                                                      }
-                                                                    },
-                                                                    child: Text(
-                                                                      "Join Queue",
-                                                                    ),
-                                                                  )
-                                                                : Text(
-                                                                    "Select service",
-                                                                  ),
-                                                            TextButton(
-                                                              onPressed: () =>
-                                                                  Navigator.pop(
-                                                                    context,
-                                                                  ),
-                                                              child: Text(
-                                                                "Cancel",
-                                                                style: TextStyle(
-                                                                  color: Color(
-                                                                    0xFF8A7E72,
+
+                                                                onPressed: () {
+                                                                  messenger
+                                                                      .hideCurrentMaterialBanner();
+                                                                },
+                                                                child: Text(
+                                                                  "Close",
+                                                                  style: TextStyle(
+                                                                    color: Colors
+                                                                        .white,
                                                                   ),
                                                                 ),
                                                               ),
-                                                            ),
-                                                          ],
+                                                            ],
+                                                          ),
                                                         );
-                                                      },
-                                                    );
-                                                  },
-                                                );
-                                              },
-                                              child: Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                children: [
-                                                  Icon(
-                                                    Icons.add_circle_outline,
-                                                    color: Colors.white,
-                                                  ),
-                                                  Text(
-                                                    "Join Queue",
-                                                    style: TextStyle(
-                                                      color: Colors.white,
-                                                    ),
-                                                  ),
-                                                ],
+                                                        Future.delayed(
+                                                          Duration(seconds: 5),
+                                                          () {
+                                                            if (messenger
+                                                                .mounted) {
+                                                              messenger
+                                                                  .hideCurrentMaterialBanner();
+                                                            }
+                                                          },
+                                                        );
+                                                      } else {
+                                                        await joinQueue();
+                                                      }
+                                                    },
+                                                    child: Text("Join Queue"),
+                                                  )
+                                                : Text("Select service"),
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(context),
+                                              child: Text(
+                                                "Cancel",
+                                                style: TextStyle(
+                                                  color: Color(0xFF8A7E72),
+                                                ),
                                               ),
                                             ),
-                                          ),
-                                        ),
-                  
-                        ],
+                                          ],
+                                        );
+                                      },
+                                    );
+                                  },
+                                );
+                              
+                            },
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.add_circle_outline,
+                                    color: Colors.white,
+                                  ),
+                                  Text(
+                                    "Join Queue",
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      
+                      ],
                     ),
                   ),
-
-                                      
 
                   SizedBox(height: height * 0.02),
 
@@ -821,7 +866,7 @@ class _QueuescreenState extends State<Queuescreen> {
                             ),
                           ),
                         ),
-                        
+
                         SizedBox(height: height * 0.01),
                         Padding(
                           padding: const EdgeInsets.all(8.0),
