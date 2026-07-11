@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cherry_toast/cherry_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:queueless/constant/env.dart';
@@ -18,6 +19,7 @@ class _WorkerloginscreenState extends State<Workerloginscreen> {
 
   Future <void> handleLogin ()async{
     try {
+      // if(!emailController.text.toString().contains(".com"))
       final response = await http.post(Uri.parse("$BaseUrl/worker/auth/worker-login"),
       headers: {'Content-Type':'application/json'},
       body: jsonEncode({
@@ -32,7 +34,9 @@ class _WorkerloginscreenState extends State<Workerloginscreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Center(child: Text("Successfully logged"),)),
         );
+        // await updateWorkerStatus(emailController.text.toString());
         Navigator.push(context, MaterialPageRoute(builder: (context) => Workerhomescreen(),));
+
       }
 
       if(response.statusCode!=200){
@@ -40,6 +44,33 @@ class _WorkerloginscreenState extends State<Workerloginscreen> {
       }
     } catch (e) {
       print("Error => $e");
+    }
+  }
+  
+  Future <void> updateWorkerStatus (String email)async{
+    try {
+      // SharedPreferences preferences = await 
+      final response = await http.put(Uri.parse("$BaseUrl/worker/update-status"),
+      headers: {'Content-Type':'application/json'},
+      body: jsonEncode({
+        
+        "status":"active"
+      })
+      );
+
+      if(response.statusCode==200){
+        Navigator.push(context, MaterialPageRoute(builder: (context) => Workerhomescreen(),));
+      }
+
+      if(response.statusCode!=200){
+        debugPrint("Error => ${response.statusCode} -- ${response.body}");
+        final resbody = jsonDecode(response.body);
+        CherryToast.error(
+          title: Text(resbody["error"]),
+        );
+      }
+    } catch (e) {
+      debugPrint("Error occured => $e");
     }
   }
   @override

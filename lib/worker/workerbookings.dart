@@ -27,7 +27,7 @@ class _WorkerBookingsPageState extends State<WorkerBookingsPage> {
       final token = prefs.getString("token");
       final decodedToken = JwtDecoder.decode(token!);
       final workerID = decodedToken["wid"];
-      final response = await http.get(Uri.parse("$BaseUrl/worker/getBookingsBasedOnDate/$workerID?date=${widget.date}"),
+      final response = await http.get(Uri.parse("$BaseUrl/worker/getWorkerBookingsBasedOnDate/$workerID?date=${widget.date}"),
       headers: {'Content-Type':'application/json'}
       );
       if(response.statusCode==200){

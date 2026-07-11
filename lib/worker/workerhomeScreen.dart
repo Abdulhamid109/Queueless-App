@@ -4,7 +4,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:queueless/Widgets/WorkerAppbar.dart';
+// import 'package:queueless/admin/LoginScreen.dart';
 import 'package:queueless/constant/env.dart';
+// import 'package:queueless/helper/handleLogoutFunctionality.dart';
 import 'package:queueless/worker/workerbookings.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
@@ -38,6 +40,11 @@ class _WorkerhomescreenState extends State<Workerhomescreen> {
       );
       if(response.statusCode==200){
         final resbody = jsonDecode(response.body);
+        setState(() {
+          debugPrint("Status ${resbody["data"]["WorkStatus"]}");
+          status = resbody["data"]["WorkStatus"];
+          isSwitched = status == "active";
+        });
 
         return resbody;
       }
@@ -51,7 +58,11 @@ class _WorkerhomescreenState extends State<Workerhomescreen> {
   
   Future updateWorkerStatus () async{
     try {
-      final response = await http.put(Uri.parse("$BaseUrl/worker/updateStatus"),
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString("token");
+      final decodedToken = JwtDecoder.decode(token!);
+      final wid = decodedToken["wid"];
+      final response = await http.put(Uri.parse("$BaseUrl/worker/update-status/$wid"),
       headers: {'Content-Type':'application/json'},
       body: jsonEncode({
         "status":status,
@@ -98,6 +109,8 @@ class _WorkerhomescreenState extends State<Workerhomescreen> {
         Navigator.push(context, MaterialPageRoute(builder: (context) => WorkerBookingsPage(date: "${dateTime.toLocal()}".split(' ')[0], aboutPage:aboutPageDate)));
     }
   }
+  
+  
   @override
   void initState() {
     super.initState();
@@ -148,15 +161,15 @@ class _WorkerhomescreenState extends State<Workerhomescreen> {
                       Text("Your current work status"),
                       CupertinoSwitch(
                         value: isSwitched,
-                        onChanged: (value) {
+                        onChanged: (value) async{
                           setState(() {
                             isSwitched = value;
                             debugPrint("Value - $value");
                              status = value ? "active" : "inactive";
-                             updateWorkerStatus();
                             // isSwitched?{status="active"}:{status:"inactive"};
                             
                           });
+                             await updateWorkerStatus();
                         },
                       ),
                       
@@ -227,6 +240,7 @@ class _WorkerhomescreenState extends State<Workerhomescreen> {
                     ),
                   ),
                   GestureDetector(
+                  // later dealing with this section (low priority)
                     onTap: (){
                       _selectDate(context, "Your Completed bookings for ${"${dateTime.toLocal()}".split(' ')[0]}");
                     },
@@ -239,12 +253,11 @@ class _WorkerhomescreenState extends State<Workerhomescreen> {
                       ),
                     ),
                   ),
-                  // later dealing with this section (low priority)
-                  Card(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    color: Colors.white,
-                    child: Center(child: Text("Total revenue"),),
-                  ),
+                  // Card(
+                  //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  //   color: Colors.white,
+                  //   child: Center(child: Text("Total revenue"),),
+                  // ),
                 ],
                 ),
               )
