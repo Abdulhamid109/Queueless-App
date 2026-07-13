@@ -41,7 +41,7 @@ class _WorkerhomescreenState extends State<Workerhomescreen> {
       if(response.statusCode==200){
         final resbody = jsonDecode(response.body);
         setState(() {
-          debugPrint("Status ${resbody["data"]["WorkStatus"]}");
+          // debugPrint("Status $resbody");
           status = resbody["data"]["WorkStatus"];
           isSwitched = status == "active";
         });

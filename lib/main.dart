@@ -5,6 +5,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:queueless/Customer/HomeScreen.dart';
 import 'package:queueless/Customer/LoginScreen.dart';
+import 'package:queueless/SplashScreen.dart';
 import 'package:queueless/admin/AdminHomePage.dart';
 import 'package:queueless/constant/env.dart';
 import 'package:queueless/helper/socketservice.dart';
@@ -53,7 +54,7 @@ class MyApp extends StatelessWidget {
         screen = Adminhomepage();
       }
     } else {
-      screen = LoginScreen();
+      screen = SplashScreen();
     }
 
     return MaterialApp(
