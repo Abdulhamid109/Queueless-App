@@ -77,10 +77,11 @@ class _ProfilescreenState extends State<Profilescreen> {
               final avatarIntials = snapshot.data!["Data"]["name"]
                   .toString()
                   .split(" ")
+                  .where((n) => n.isNotEmpty)
                   .map((n) => n[0])
                   .join("")
                   .toUpperCase();
-              print(avatarIntials);
+              // print(avatarIntials);
               return Padding(
                 padding: const EdgeInsets.all(25.0),
                 child: Column(

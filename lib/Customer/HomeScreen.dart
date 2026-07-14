@@ -1,5 +1,6 @@
 // On homepage also we need to ask for the location
 import 'dart:convert';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:jwt_decoder/jwt_decoder.dart';
@@ -8,6 +9,7 @@ import 'package:queueless/Widgets/CustomerAppbar.dart';
 import 'package:queueless/Widgets/CustomerDrawer.dart';
 import 'package:queueless/Widgets/locationn_error.dart';
 import 'package:queueless/constant/env.dart';
+import 'package:queueless/helper/Notification_Service.dart';
 import 'package:queueless/helper/RequestLocationPermission.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -64,6 +66,14 @@ class _HomescreenState extends State<Homescreen> {
     super.initState();
     locationCheck();
     _profileDataFuture = getProfile();
+    NotificationService notificationService = NotificationService();
+    notificationService.requestLNotificationPermission();
+    notificationService.getFCMToken();
+    notificationService.initLocalNotifications();
+
+    FirebaseMessaging.onMessage.listen((RemoteMessage message){
+      notificationService.showNotification(message);
+    });
   }
 
   @override
