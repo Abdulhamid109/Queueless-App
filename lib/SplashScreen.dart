@@ -44,8 +44,8 @@ class SplashScreen extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Text(
-                  "Join queues remotely, track your turn in real time, and spend less time waiting.",
-                  style: TextStyle(fontSize: 18),
+                  "Queueless lets you join queues digitally, track your position in real time, and show up only when it's your turn — no crowded lobbies, no wasted time.",
+                  style: TextStyle(fontSize: 15),
                   textAlign: TextAlign.center,
                 ),
               ),
