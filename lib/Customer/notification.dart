@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cherry_toast/cherry_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
@@ -18,6 +19,57 @@ class NotificationScreen extends StatefulWidget {
 
 class _NotificationScreenState extends State<NotificationScreen> {
 
+  List allNotifications =[];
+
+  Future getFiredNotifications()async{
+    try {
+      SharedPreferences preferences = await SharedPreferences.getInstance();
+      final token = preferences.getString("token");
+      final decodedToken = JwtDecoder.decode(token!);
+      final uid = decodedToken["uid"];
+      final response = await http.get(Uri.parse("$BaseUrl/customer/getNotifications/$uid"),
+      headers: {"Content-Type":'application/json'}
+      );
+      if(response.statusCode==200){
+        final respbody = jsonDecode(response.body);
+        setState(() {
+          allNotifications = respbody["data"];
+          print("All Notifications $allNotifications");
+        });
+      }
+
+      if(response.statusCode!=200){
+        CherryToast.error(
+          title: Text("Something went wrong"),
+        );
+        throw Exception("Error => ${response.statusCode} - ${response.body}");
+      }
+    } catch (e) {
+      print("error => $e");
+    }
+  }
+
+
+  Future updateAckStatus (String notificationId)async{
+    try {
+      final response = await http.put(Uri.parse("$BaseUrl/customer/updateAckStatus/$notificationId"),
+      headers: {'Content-Type':'application/json'}
+      );
+      if(response.statusCode==200){
+        CherryToast.success(
+          title: Text("Your Slot has been confirmed kindly reach fast!"),
+        );
+      }
+      if(response.statusCode!=200){
+        CherryToast.error(
+          title: Text("Something went wrong!"),
+        );
+        throw Exception("Error => ${response.statusCode} -- ${response.body}");
+      }
+    } catch (e) {
+      print("Error => $e");
+    }
+  }
 
 
 
@@ -82,65 +134,82 @@ class _NotificationScreenState extends State<NotificationScreen> {
     }
   }
 
+
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text("Notifications"), centerTitle: true),
-      body: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Center(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            // mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Icon(Icons.notifications_none),
-              // Text("No Notifcations found!")
-              ListTile(
-                tileColor: Colors.grey.shade100,
-                title: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text("Your turn will be in 15 mins on DJ Hairs"),
-                ),
-                subtitle: Row(
-                  children: [
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        backgroundColor: Colors.green,
-                      ),
-                      onPressed: () async{
-                        await locationStreaming();
-                      },
-                      child: Text(
-                        "Comming",
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ),
-                    SizedBox(width: 5),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        backgroundColor: Colors.red,
-                      ),
-                      onPressed: () {
-                        //send the notification to users who have marked flexible so that they can come in the queue..
-                      },
-                      child: Text(
-                        "Not comming",
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  void initState() {
+    super.initState();
+    getFiredNotifications();
   }
+
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(title: Text("Notifications"), centerTitle: true),
+    body: allNotifications.isEmpty
+        ? const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.notifications_none, size: 48, color: Colors.grey),
+                SizedBox(height: 8),
+                Text("No Notifications found!"),
+              ],
+            ),
+          )
+        : ListView.builder(
+            padding: const EdgeInsets.all(8.0),
+            itemCount: allNotifications.length,
+            itemBuilder: (context, index) {
+              final notification = allNotifications[index];
+              debugPrint("Notification - Data => $notification");
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                child: ListTile(
+                  tileColor: Colors.grey.shade100,
+                  title: const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Text("Your turn is within 15 mins"),
+                  ),
+                  subtitle: Row(
+                    children: [
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          backgroundColor: Colors.green,
+                        ),
+                        onPressed: () async {
+                          await locationStreaming();
+                          await updateAckStatus(notification["_id"]);
+                        },
+                        child: const Text(
+                          "Coming",
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          backgroundColor: Colors.red,
+                        ),
+                        onPressed: () {
+                          // send notification to flexible-marked users
+                        },
+                        child: const Text(
+                          "Not coming",
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+  );
+}
 }
