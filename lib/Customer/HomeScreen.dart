@@ -1,5 +1,6 @@
 // On homepage also we need to ask for the location
 import 'dart:convert';
+import 'package:cherry_toast/cherry_toast.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -61,6 +62,36 @@ class _HomescreenState extends State<Homescreen> {
     }
   }
 
+  Future<void> updateFCM()async{
+    try {
+      NotificationService notificationService = NotificationService();
+      final FCMToken = await notificationService.getFCMToken(); 
+      SharedPreferences preferences = await SharedPreferences.getInstance();
+      final token = preferences.getString("token");
+      final decodedToken = JwtDecoder.decode(token!);
+      final uid = decodedToken["uid"];
+      final response = await http.put(Uri.parse("$BaseUrl/customer/updateFCM/$uid"),
+      headers: {'Content-Type':'application/json'},
+      body: jsonEncode({
+        "fcmToken":FCMToken
+      })
+      );
+
+      if(response.statusCode==200){
+        print("Successfully fetched the FCM ");
+
+      }
+
+      if(response.statusCode!=200){
+        final errorbody = jsonDecode(response.body);
+        CherryToast.error(
+          title: Text("${errorbody["error"]}"),   
+        );
+      }
+    } catch (e) {
+      print("Error => $e");
+    }
+  }
   @override
   void initState() {
     super.initState();
@@ -70,7 +101,7 @@ class _HomescreenState extends State<Homescreen> {
     notificationService.requestLNotificationPermission();
     notificationService.getFCMToken();
     notificationService.initLocalNotifications();
-
+    updateFCM();
     FirebaseMessaging.onMessage.listen((RemoteMessage message){
       notificationService.showNotification(message);
     });
