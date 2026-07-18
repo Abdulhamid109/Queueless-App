@@ -27,6 +27,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
       final token = preferences.getString("token");
       final decodedToken = JwtDecoder.decode(token!);
       final uid = decodedToken["uid"];
+      debugPrint("Uid => $uid");
       final response = await http.get(Uri.parse("$BaseUrl/customer/getNotifications/$uid"),
       headers: {"Content-Type":'application/json'}
       );
@@ -98,7 +99,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
       final response = await http.post(
         Uri.parse("$BaseUrl/customer/getLiveLocation/$uid"),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({latitude, longitude}),
+        body: jsonEncode(
+          {
+            "latitude": latitude,
+  "longitude": longitude,
+          }
+        ),
       );
 
       if (response.statusCode == 200) {
@@ -170,7 +176,9 @@ Widget build(BuildContext context) {
                     padding: EdgeInsets.all(8.0),
                     child: Text("Your turn is within 15 mins"),
                   ),
-                  subtitle: Row(
+                  subtitle: notification["ackStatus"]
+                  ?Text("Thankyou for acknowledgment")
+                  :Row(
                     children: [
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
@@ -204,9 +212,11 @@ Widget build(BuildContext context) {
                           style: TextStyle(color: Colors.white),
                         ),
                       ),
+                    
                     ],
+                  )
+                  
                   ),
-                ),
               );
             },
           ),

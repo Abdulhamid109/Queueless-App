@@ -105,6 +105,7 @@ class _HomescreenState extends State<Homescreen> {
     FirebaseMessaging.onMessage.listen((RemoteMessage message){
       notificationService.showNotification(message);
     });
+    updateFCM();
   }
 
   @override
