@@ -97,16 +97,20 @@ class _WorkerhomescreenState extends State<Workerhomescreen> {
     // DateTime selectedDate = DateTime.now();
 
   Future<void> _selectDate(BuildContext context,String aboutPageDate) async {
+    final DateTime lastAllowedDate = today.subtract(const Duration(days: 1));
+  final DateTime initial = dateTime.isAfter(lastAllowedDate) ? lastAllowedDate : dateTime;
+
     final DateTime? picked = await showDatePicker(
         context: context,
-        initialDate: dateTime,
+        initialDate: initial,
         firstDate: DateTime(2015, 8),
-        lastDate: DateTime(today.year,today.month,today.day));
-    if (picked != null && picked != dateTime) {
+        lastDate: lastAllowedDate);
+    if (picked != null) {
       setState(() {
         dateTime = picked;
       });
-        Navigator.push(context, MaterialPageRoute(builder: (context) => WorkerBookingsPage(date: "${dateTime.toLocal()}".split(' ')[0], aboutPage:aboutPageDate)));
+      final formattedDate = "${picked.toLocal()}".split(' ')[0];
+        Navigator.push(context, MaterialPageRoute(builder: (context) => WorkerBookingsPage(date: formattedDate, aboutPage:"$aboutPageDate $formattedDate")));
     }
   }
   
@@ -228,7 +232,7 @@ class _WorkerhomescreenState extends State<Workerhomescreen> {
                   ),
                   GestureDetector(
                     onTap: (){
-                      _selectDate(context, "Your cancelled bookings for ${"${dateTime.toLocal()}".split(' ')[0]}");
+                      _selectDate(context, "Your cancelled bookings for ");
                     },
                     child: Padding(
                       padding: const EdgeInsets.all(8.0),
