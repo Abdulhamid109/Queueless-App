@@ -4,7 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:queueless/Widgets/AdminAppBar.dart';
 import 'package:queueless/Widgets/AdminDrawer.dart';
 import 'package:http/http.dart' as http;
+import 'package:queueless/admin/CustomerRententionPage.dart';
+import 'package:queueless/admin/ExpensePage.dart';
+import 'package:queueless/admin/businessFeedback.dart';
 import 'package:queueless/constant/env.dart';
+import 'package:syncfusion_flutter_charts/charts.dart';
 
 class Analyticspage extends StatefulWidget {
   final String bussinessId;
@@ -21,10 +25,17 @@ class Analyticspage extends StatefulWidget {
   State<Analyticspage> createState() => _AnalyticspageState();
 }
 
-class _AnalyticspageState extends State<Analyticspage> {
+class ChartData {
+  ChartData(this.x, this.y, this.text, [this.color]);
+  final String x;
+  final double y;
+  final String text;
+  final Color? color;
+}
 
-  Future <Map<String, dynamic>>? _timeDetails;
-  
+class _AnalyticspageState extends State<Analyticspage> {
+  Future<Map<String, dynamic>>? _timeDetails;
+
   Future<Map<String, dynamic>> getTimeDetails() async {
     try {
       final response = await http.get(
@@ -35,7 +46,9 @@ class _AnalyticspageState extends State<Analyticspage> {
         final responseBody = jsonDecode(response.body);
         return responseBody;
       }
-      throw Exception("responseCode :${response.statusCode} ,Body :${response.body}");
+      throw Exception(
+        "responseCode :${response.statusCode} ,Body :${response.body}",
+      );
     } catch (e) {
       print("Error => $e");
       throw "Error => $e";
@@ -44,7 +57,6 @@ class _AnalyticspageState extends State<Analyticspage> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     _timeDetails = getTimeDetails();
   }
@@ -52,6 +64,11 @@ class _AnalyticspageState extends State<Analyticspage> {
   @override
   Widget build(BuildContext context) {
     double height = MediaQuery.of(context).size.height * 1;
+    // double width = MediaQuery.of(context).size.width * 1;
+    final List<ChartData> chartData = [
+      ChartData('Positive [Rating > 3]', 75, "+ve",Colors.green),
+      ChartData('Negative [Rating < 3]', 25, '-ve',Colors.red),
+    ];
     return Scaffold(
       appBar: Adminappbar(),
       drawer: Admindrawer(),
@@ -89,31 +106,46 @@ class _AnalyticspageState extends State<Analyticspage> {
                         FutureBuilder<Map<String, dynamic>>(
                           future: _timeDetails,
                           builder: (context, snapshot) {
-                            if(snapshot.connectionState == ConnectionState.waiting){
-                              return Center(child: CircularProgressIndicator(color: Colors.black,),);
-                            }else if(snapshot.hasError){
-                              return Text("Something went wrong => ${snapshot.error}");
-                            }else if(snapshot.hasData){
-                              return Column(
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Text("Business Start Time : ${snapshot.data!["data"]["BST"]}"),
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return Center(
+                                child: CircularProgressIndicator(
+                                  color: Colors.black,
                                 ),
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Text("Business End Time : ${snapshot.data!["data"]["BET"]}"),
+                              );
+                            } else if (snapshot.hasError) {
+                              return Text(
+                                "Something went wrong => ${snapshot.error}",
+                              );
+                            } else if (snapshot.hasData) {
+                              return SizedBox(
+                                width: double.infinity,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Text(
+                                        "Business Start Time : ${snapshot.data!["data"]["BST"]}",
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Text(
+                                        "Business End Time : ${snapshot.data!["data"]["BET"]}",
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Text(
+                                        "Customer Per Day : ${snapshot.data!["data"]["CustomerLimitPerDay"]}",
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Text("Customer Per Day : ${snapshot.data!["data"]["CustomerLimitPerDay"]}"),
-                                ),
-                              ],
-                            );
-                          
+                              );
                             }
                             return Text("");
-                            
                           },
                         ),
                       ],
@@ -131,11 +163,17 @@ class _AnalyticspageState extends State<Analyticspage> {
 
               SizedBox(
                 height: height * 0.1,
-                child: Card(
-                  color: Colors.white,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Center(child: Text("Expense Calculation")),
+                child: GestureDetector(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => Expensepage()),
+                  ),
+                  child: Card(
+                    color: Colors.white,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Center(child: Text("Expense Calculation")),
+                    ),
                   ),
                 ),
               ),
@@ -143,11 +181,14 @@ class _AnalyticspageState extends State<Analyticspage> {
 
               SizedBox(
                 height: height * 0.1,
-                child: Card(
-                  color: Colors.white,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Center(child: Text("Customer Retention Trend")),
+                child: GestureDetector(
+                  onTap: ()=>Navigator.push(context, MaterialPageRoute(builder: (context) => CustomerRententionGraphpage(),)),
+                  child: Card(
+                    color: Colors.white,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Center(child: Text("Customer Retention Trend")),
+                    ),
                   ),
                 ),
               ),
@@ -161,11 +202,71 @@ class _AnalyticspageState extends State<Analyticspage> {
 
               SizedBox(
                 height: height * 0.1,
-                child: Card(
-                  color: Colors.white,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Center(child: Text("Business Rating Chart")),
+                child: GestureDetector(
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) {
+                        return AlertDialog(
+                          backgroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          title: Center(
+                            child: Text(
+                              "Your Business Rating",
+                              style: TextStyle(fontSize: 18),
+                            ),
+                          ),
+                          content: SizedBox(
+                            height: height * 0.4,
+                            // width: width * 0.8,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Expanded(
+                                  child: SfCircularChart(
+                                    legend: Legend(
+    isVisible: true,
+    position: LegendPosition.top,
+    overflowMode: LegendItemOverflowMode.wrap,
+  ),
+                                    series: <CircularSeries>[
+                                      // Render pie chart
+                                      PieSeries<ChartData, String>(
+                                        dataSource: chartData,
+                                        pointColorMapper: (ChartData data, _) =>
+                                            data.color,
+                                        xValueMapper: (ChartData data, _) =>
+                                            data.x,
+                                        yValueMapper: (ChartData data, _) =>
+                                            data.y,
+                                        dataLabelMapper: (ChartData data, _) =>
+                                            data.text,
+                                        dataLabelSettings:
+                                            const DataLabelSettings(
+                                              isVisible: true,
+                                              labelPosition:
+                                                  ChartDataLabelPosition
+                                                      .outside,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                  child: Card(
+                    color: Colors.white,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Center(child: Text("Business Rating Chart")),
+                    ),
                   ),
                 ),
               ),
@@ -179,11 +280,17 @@ class _AnalyticspageState extends State<Analyticspage> {
 
               SizedBox(
                 height: height * 0.1,
-                child: Card(
-                  color: Colors.white,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Center(child: Text("Customer Feedbacks")),
+                child: GestureDetector(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => BusinessFeedback()),
+                  ),
+                  child: Card(
+                    color: Colors.white,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Center(child: Text("Customer Feedbacks")),
+                    ),
                   ),
                 ),
               ),

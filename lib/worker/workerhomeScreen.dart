@@ -94,27 +94,6 @@ class _WorkerhomescreenState extends State<Workerhomescreen> {
     }
   }
   
-    // DateTime selectedDate = DateTime.now();
-
-  Future<void> _selectDate(BuildContext context,String aboutPageDate) async {
-    final DateTime lastAllowedDate = today.subtract(const Duration(days: 1));
-  final DateTime initial = dateTime.isAfter(lastAllowedDate) ? lastAllowedDate : dateTime;
-
-    final DateTime? picked = await showDatePicker(
-        context: context,
-        initialDate: initial,
-        firstDate: DateTime(2015, 8),
-        lastDate: lastAllowedDate);
-    if (picked != null) {
-      setState(() {
-        dateTime = picked;
-      });
-      final formattedDate = "${picked.toLocal()}".split(' ')[0];
-        Navigator.push(context, MaterialPageRoute(builder: (context) => WorkerBookingsPage(date: formattedDate, aboutPage:"$aboutPageDate $formattedDate")));
-    }
-  }
-  
-  
   @override
   void initState() {
     super.initState();
@@ -213,10 +192,7 @@ class _WorkerhomescreenState extends State<Workerhomescreen> {
                 child: Text("Worker Management tools",style: TextStyle(fontSize: 17,decoration: TextDecoration.underline),),
               ),
 
-              Expanded(
-                child: GridView(gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2),
-                children: [
-                  GestureDetector(
+              GestureDetector(
                     onTap: (){
                       String date = "${dateTime.day}/${dateTime.month}/${dateTime.year}";
                       Navigator.push(context, MaterialPageRoute(builder: (context) => WorkerBookingsPage(date: date, aboutPage: "Your Current Day Booking"),));
@@ -226,45 +202,15 @@ class _WorkerhomescreenState extends State<Workerhomescreen> {
                       child: Card(
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         color: Colors.white,
-                        child: Center(child: Text("Today's Bookings"),),
+                        child: Center(child: Padding(
+                          padding: const EdgeInsets.all(15.0),
+                          child: Text("Today's Bookings"),
+                        ),),
                       ),
                     ),
                   ),
-                  GestureDetector(
-                    onTap: (){
-                      _selectDate(context, "Your cancelled bookings for ");
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Card(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        color: Colors.white,
-                        child: Center(child: Text("Cancelled Bookings"),),
-                      ),
-                    ),
-                  ),
-                  GestureDetector(
-                  // later dealing with this section (low priority)
-                    onTap: (){
-                      _selectDate(context, "Your Completed bookings for ${"${dateTime.toLocal()}".split(' ')[0]}");
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Card(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        color: Colors.white,
-                        child: Center(child: Text("Completed Bookings"),),
-                      ),
-                    ),
-                  ),
-                  // Card(
-                  //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  //   color: Colors.white,
-                  //   child: Center(child: Text("Total revenue"),),
-                  // ),
-                ],
-                ),
-              )
+                  
+              
             ],
           ),
         ),

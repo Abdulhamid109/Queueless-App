@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:queueless/admin/AdminHomePage.dart';
 import 'package:queueless/admin/LoginScreen.dart';
 import 'package:queueless/helper/handleLogoutFunctionality.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class Admindrawer extends StatelessWidget {
   const Admindrawer({super.key});

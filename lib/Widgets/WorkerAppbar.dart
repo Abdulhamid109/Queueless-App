@@ -58,7 +58,8 @@ class _WorkerAppbarState extends State<WorkerAppbar> {
   Widget build(BuildContext context) {
     return AppBar(
       backgroundColor: Colors.blue.shade100,
-      title: Text("Worker Panel"),
+      automaticallyImplyLeading: false,
+      title: Text("QL Worker Panel"),
       actions: [
         Padding(
           padding: const EdgeInsets.all(8.0),

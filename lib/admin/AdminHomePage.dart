@@ -193,11 +193,15 @@ class _AdminhomepageState extends State<Adminhomepage> {
                               color: const Color(0xFF8A7E72),
                             ),
                             SizedBox(width: 4),
-                            Text(
-                              "${data["BusinessAddress"]}",
-                              style: TextStyle(
-                                color: const Color(0xFF8A7E72),
-                                fontSize: 12,
+                            Expanded(
+                              child: Text(
+                                "${data["BusinessAddress"]}",
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: const Color(0xFF8A7E72),
+                                  fontSize: 12,
+                                ),
                               ),
                             ),
                           ],
