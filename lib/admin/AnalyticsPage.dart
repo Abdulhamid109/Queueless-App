@@ -166,7 +166,7 @@ class _AnalyticspageState extends State<Analyticspage> {
                 child: GestureDetector(
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => Expensepage()),
+                    MaterialPageRoute(builder: (context) => Expensepage(bid: widget.bussinessId,)),
                   ),
                   child: Card(
                     color: Colors.white,
@@ -283,7 +283,7 @@ class _AnalyticspageState extends State<Analyticspage> {
                 child: GestureDetector(
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => BusinessFeedback()),
+                    MaterialPageRoute(builder: (context) => BusinessFeedback(bid: widget.bussinessId,)),
                   ),
                   child: Card(
                     color: Colors.white,
