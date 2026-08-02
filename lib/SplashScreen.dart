@@ -7,6 +7,7 @@ class SplashScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(28.0),
@@ -14,9 +15,9 @@ class SplashScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0.5, end: 1.5),
-                duration: const Duration(milliseconds: 900),
-                curve: Curves.easeOutBack,
+                tween: Tween(begin: 0.5, end: 1.0),
+                duration: const Duration(milliseconds: 700),
+                curve: Curves.easeOut,
                 builder: (context, value, child) {
                   return Opacity(
                     opacity: value.clamp(0.0, 1.0),
@@ -27,45 +28,65 @@ class SplashScreen extends StatelessWidget {
                   );
                 },
                 child: SizedBox(
-                  height: 200,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      image: DecorationImage(
-                        image: AssetImage(
-                          "assets/file_000000008ee471fd93c3f86bb8fcc4c7.png",
-                        ),
-                      ),
-                    ),
+                  height: 180,
+                  child: Image.asset(
+                    "assets/file_000000008ee471fd93c3f86bb8fcc4c7.png",
+                    fit: BoxFit.contain,
                   ),
                 ),
               ),
 
-              SizedBox(height: 20),
+              const SizedBox(height: 28),
+
+              const Text(
+                "Queueless",
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1B5E20),
+                  letterSpacing: 0.5,
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
               Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Text(
-                  "Queueless lets you join queues digitally, track your position in real time, and show up only when it's your turn — no crowded lobbies, no wasted time.",
-                  style: TextStyle(fontSize: 15),
+                  "Join queues digitally, track your position in real time, and show up only when it's your turn — no crowded lobbies, no wasted time.",
+                  style: TextStyle(
+                    fontSize: 15,
+                    height: 1.5,
+                    color: Colors.grey.shade700,
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ),
-              SizedBox(height: 20),
+
+              const SizedBox(height: 32),
+
               SizedBox(
                 width: double.infinity,
+                height: 52,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    backgroundColor: Colors.blue,
+                    backgroundColor: const Color(0xFF2E7D32),
+                    elevation: 0,
                   ),
                   onPressed: () => Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(builder: (context) => LoginScreen()),
                   ),
-                  child: Text(
+                  child: const Text(
                     "Get Started",
-                    style: TextStyle(color: Colors.white),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),

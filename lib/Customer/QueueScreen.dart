@@ -246,12 +246,12 @@ class _QueuescreenState extends State<Queuescreen> {
     }
   }
 
-  void _registerListeners() {
-    socketIO.off("workerQueueUpdated");
-    socketIO.on("workerQueueUpdated", (data) {
-      setState(() {});
-    });
-  }
+  // void _registerListeners() {
+  //   socketIO.off("workerQueueUpdated");
+  //   socketIO.on("workerQueueUpdated", (data) {
+  //     setState(() {});
+  //   });
+  // }
 
   void _joinBusinessRoom() {
     socketIO.onceConnected(() {
@@ -289,7 +289,12 @@ class _QueuescreenState extends State<Queuescreen> {
     }
   }
 
+  bool _isExiting = false;
+
   Future exitQueue() async {
+    if (_isExiting) return; // prevent duplicate taps mid-request
+    setState(() => _isExiting = true);
+
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       final token = prefs.getString("token");
@@ -301,15 +306,24 @@ class _QueuescreenState extends State<Queuescreen> {
       );
       if (response.statusCode == 200) {
         CherryToast.success(title: Text("Left from Queue")).show(context);
-        userJoined = false;
-        await getRealtimeQueueUpdates();
-      }
-      if (response.statusCode != 200) {
+        if (mounted) {
+          setState(() {
+            userJoined = false;
+            queuePresency = false;
+            EWT = "";
+            Postion = "";
+          });
+        }
+      } else {
         CherryToast.error(title: Text("Something went wrong")).show(context);
         throw Exception("Error => ${response.body} -- ${response.statusCode}");
       }
     } catch (e) {
       print("Error =>$e");
+    } finally {
+      if (mounted) {
+        setState(() => _isExiting = false);
+      }
     }
   }
 
@@ -319,7 +333,7 @@ class _QueuescreenState extends State<Queuescreen> {
     TimeDetails = getTimeData();
     socketIO.init(serverUrl: BaseUrl);
     _joinBusinessRoom();
-    _registerListeners();
+    // _registerListeners();
     getAllWorkers();
     getRealtimeQueueUpdates();
   }
@@ -590,13 +604,24 @@ class _QueuescreenState extends State<Queuescreen> {
                                     ),
                                     backgroundColor: Colors.red,
                                   ),
-                                  onPressed: () async {
-                                    await exitQueue();
-                                  },
-                                  child: Text(
-                                    "Leave Queue",
-                                    style: TextStyle(color: Colors.white),
-                                  ),
+                                  onPressed: _isExiting
+                                      ? null
+                                      : () async {
+                                          await exitQueue();
+                                        },
+                                  child: _isExiting
+                                      ? SizedBox(
+                                          height: 18,
+                                          width: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : Text(
+                                          "Leave Queue",
+                                          style: TextStyle(color: Colors.white),
+                                        ),
                                 ),
                               )
                             : Padding(
