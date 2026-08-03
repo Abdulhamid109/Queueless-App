@@ -39,7 +39,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
       }
 
       if (response.statusCode != 200) {
-        CherryToast.error(title: Text("Something went wrong"));
+        CherryToast.error(title: Text("Something went wrong")).show(context);
         throw Exception("Error => ${response.statusCode} - ${response.body}");
       }
     } catch (e) {
@@ -52,21 +52,54 @@ class _NotificationScreenState extends State<NotificationScreen> {
       final response = await http.put(
         Uri.parse("$BaseUrl/customer/updateAckStatus/$notificationId"),
         headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          "status":"comming"
+        })
       );
       if (response.statusCode == 200) {
         CherryToast.success(
           title: Text("Your Slot has been confirmed kindly reach fast!"),
-        );
+        ).show(context);
         setState(() {
           final target = allNotifications.firstWhere(
             (n) => n["_id"] == notificationId,
             orElse: () => null,
           );
-          if (target != null) target["ackStatus"] = true;
+          if (target != null) target["ackStatus"] = "comming";
         });
       }
       if (response.statusCode != 200) {
-        CherryToast.error(title: Text("Something went wrong!"));
+        CherryToast.error(title: Text("Something went wrong!")).show(context);
+        throw Exception("Error => ${response.statusCode} -- ${response.body}");
+      }
+    } catch (e) {
+      print("Error => $e");
+    }
+  }
+
+  Future updateNegAckStatus(String notificationId) async {
+    try {
+      final response = await http.put(
+        Uri.parse("$BaseUrl/customer/updateAckStatus/$notificationId"),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          "status":"notcomming"
+        })
+      );
+      if (response.statusCode == 200) {
+        CherryToast.info(
+          title: Text("Your Slot have been discarded!"),
+        ).show(context);
+        setState(() {
+          final target = allNotifications.firstWhere(
+            (n) => n["_id"] == notificationId,
+            orElse: () => null,
+          );
+          if (target != null) target["ackStatus"] = "notcomming";
+        });
+      }
+      if (response.statusCode != 200) {
+        CherryToast.error(title: Text("Something went wrong!")).show(context);
         throw Exception("Error => ${response.statusCode} -- ${response.body}");
       }
     } catch (e) {
@@ -165,7 +198,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
               itemCount: allNotifications.length,
               itemBuilder: (context, index) {
                 final notification = allNotifications[index];
-                final acknowledged = notification["ackStatus"] == true;
+                final acknowledged = notification["ackStatus"];
 
                 return Card(
                   margin: const EdgeInsets.symmetric(vertical: 4.0),
@@ -196,13 +229,18 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         ),
                         const SizedBox(height: 10),
 
-                        // action row
-                        acknowledged
+                        
+                        acknowledged == "comming"
                             ? Text(
                                 "Thank you for acknowledging",
                                 style: TextStyle(color: Colors.green.shade700, fontWeight: FontWeight.w500),
                               )
-                            : Row(
+                            : acknowledged == "notcomming"?
+                            Text("Your Slot have been terminated!",
+                                style: TextStyle(color: Colors.red.shade700, fontWeight: FontWeight.w500),
+
+                            )
+                            :Row(
                                 children: [
                                   ElevatedButton(
                                     style: ElevatedButton.styleFrom(
@@ -221,8 +259,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                       backgroundColor: Colors.red,
                                     ),
-                                    onPressed: () {
+                                    onPressed: () async{
                                       // send notification to flexible-marked users
+                                      await updateNegAckStatus(notification["_id"]);
                                     },
                                     child: const Text("Not coming", style: TextStyle(color: Colors.white)),
                                   ),

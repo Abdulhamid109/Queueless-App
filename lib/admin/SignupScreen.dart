@@ -198,6 +198,18 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
                       "Company Email",
                       Icons.email_outlined,
                     ),
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) {
+                        return "Enter your email";
+                      }
+                      final emailRegex = RegExp(
+                        r'^[a-zA-Z0-9.!#$%&*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$',
+                      );
+                      if (!emailRegex.hasMatch(v.trim())) {
+                        return "Enter a valid email";
+                      }
+                      return null;
+                    },
                   ),
 
                   const SizedBox(height: 18),
@@ -227,6 +239,27 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
                         ),
                       ),
                     ),
+                    validator: (v) {
+                      if (v == null || v.isEmpty) {
+                        return "Enter your password";
+                      }
+                      if (v.length < 8) {
+                        return "Password must be at least 8 characters";
+                      }
+                      if (!RegExp(r'[A-Z]').hasMatch(v)) {
+                        return "Include at least one uppercase letter";
+                      }
+                      if (!RegExp(r'[a-z]').hasMatch(v)) {
+                        return "Include at least one lowercase letter";
+                      }
+                      if (!RegExp(r'[0-9]').hasMatch(v)) {
+                        return "Include at least one number";
+                      }
+                      if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(v)) {
+                        return "Include at least one special character";
+                      }
+                      return null;
+                    },
                   ),
 
                   const SizedBox(height: 12),
@@ -255,7 +288,6 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
                           ? Center(child: CircularProgressIndicator())
                           : const Text(
                               "Signup",
-
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 16,

@@ -85,12 +85,22 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
         SharedPreferences pref = await SharedPreferences.getInstance();
         pref.setString("token", decodedbody["token"]);
         print("Token Data => ${decodedbody["token"]}");
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Successfully logged in...redirecting to homepage"),
-            duration: Duration(seconds: 1),
-          ),
-        ).closed.then((value) => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Adminhomepage(),)),);
+        ScaffoldMessenger.of(context)
+            .showSnackBar(
+              SnackBar(
+                content: Text(
+                  "Successfully logged in...redirecting to homepage",
+                ),
+                duration: Duration(seconds: 1),
+              ),
+            )
+            .closed
+            .then(
+              (value) => Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => Adminhomepage()),
+              ),
+            );
       } else {
         print(
           "Some Error happened with code as ${response.statusCode} => ${response.body} ",
@@ -211,9 +221,21 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                   TextFormField(
                     controller: emailController,
                     decoration: fieldDecoration(
-                      "Company Email",
+                      "Registered Email",
                       Icons.email_outlined,
                     ),
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) {
+                        return "Enter your email";
+                      }
+                      final emailRegex = RegExp(
+                        r'^[a-zA-Z0-9.!#$%&*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$',
+                      );
+                      if (!emailRegex.hasMatch(v.trim())) {
+                        return "Enter a valid email";
+                      }
+                      return null;
+                    },
                   ),
 
                   const SizedBox(height: 18),
@@ -243,6 +265,27 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                         ),
                       ),
                     ),
+                    validator: (v) {
+                      if (v == null || v.isEmpty) {
+                        return "Enter your password";
+                      }
+                      if (v.length < 8) {
+                        return "Password must be at least 8 characters";
+                      }
+                      if (!RegExp(r'[A-Z]').hasMatch(v)) {
+                        return "Include at least one uppercase letter";
+                      }
+                      if (!RegExp(r'[a-z]').hasMatch(v)) {
+                        return "Include at least one lowercase letter";
+                      }
+                      if (!RegExp(r'[0-9]').hasMatch(v)) {
+                        return "Include at least one number";
+                      }
+                      if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(v)) {
+                        return "Include at least one special character";
+                      }
+                      return null;
+                    },
                   ),
 
                   const SizedBox(height: 12),
@@ -334,7 +377,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                     ),
                   ),
 
-                  SizedBox(height: 10,),
+                  SizedBox(height: 10),
                   Center(
                     child: RichText(
                       text: TextSpan(
@@ -366,7 +409,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                       ),
                     ),
                   ),
-                
                 ],
               ),
             ),

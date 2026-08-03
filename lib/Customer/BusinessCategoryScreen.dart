@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cherry_toast/cherry_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:queueless/Customer/QueueScreen.dart';
@@ -25,6 +26,26 @@ class _BusinesscategoryscreenState extends State<Businesscategoryscreen> {
   bool hasLoaded = false;
   double latitude = 0;
   double longitude = 0;
+
+  TextEditingController searchController = TextEditingController();
+  TextEditingController businessSearchController = TextEditingController();
+  List<dynamic> filteredBusiness = [];
+
+  void filterBusinesses(String query) {
+    setState(() {
+      if (query.trim().isEmpty) {
+        filteredBusiness = allbusiness;
+      } else {
+        filteredBusiness = allbusiness
+            .where(
+              (b) => b["BusinessName"].toString().toLowerCase().contains(
+                query.trim().toLowerCase(),
+              ),
+            )
+            .toList();
+      }
+    });
+  }
 
   Future<void> getCurrentLocation() async {
     final PermissionGranted = await requestLocationPermission();
@@ -61,20 +82,58 @@ class _BusinesscategoryscreenState extends State<Businesscategoryscreen> {
     });
     try {
       final response = await http.post(
-        Uri.parse("$BaseUrl/customer/getBusinessBasedOnCat/${widget.bCategory}"),
+        Uri.parse(
+          "$BaseUrl/customer/getBusinessBasedOnCat/${widget.bCategory}",
+        ),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({"latitude": latitude, "longitude": longitude}),
       );
 
       final responseBody = jsonDecode(response.body);
       if (response.statusCode == 200) {
-
         setState(() {
           allbusiness = responseBody["data"];
+          filteredBusiness = allbusiness;
         });
       }
-      if(response.statusCode!=200){
+      if (response.statusCode != 200) {
         throw Exception("Error => ${response.statusCode} -- ${response.body}");
+      }
+    } catch (e) {
+      print("Error Occured! => $e");
+    } finally {
+      setState(() {
+        isloading = false;
+        hasLoaded = true;
+      });
+    }
+  }
+
+  Future getAllBusinessForIncreasedRadius(String radius) async {
+    setState(() {
+      isloading = true;
+    });
+    try {
+      final response = await http.post(
+        Uri.parse("$BaseUrl/admin/getBusinessBasedonRad/${widget.bCategory}"),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          "latitude": latitude,
+          "longitude": longitude,
+          "radius": radius,
+        }),
+      );
+      if (response.statusCode == 200) {
+        final resbody = await jsonDecode(response.body);
+        setState(() {
+          allbusiness = resbody["data"];
+          filteredBusiness = allbusiness;
+        });
+        CherryToast.success(
+          title: Text(
+            "Successfully fetched businesses within the range of ${searchController.text} KM",
+          ),
+        ).show(context);
       }
     } catch (e) {
       print("Error Occured! => $e");
@@ -98,14 +157,14 @@ class _BusinesscategoryscreenState extends State<Businesscategoryscreen> {
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: (){
+      onTap: () {
         FocusScope.of(context).unfocus();
       },
       child: Scaffold(
         appBar: Customerappbar(),
         drawer: Customerdrawer(),
         body: RefreshIndicator(
-          onRefresh: ()=>getCurrentLocation(),
+          onRefresh: () => getCurrentLocation(),
           child: SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.all(28.0),
@@ -116,7 +175,10 @@ class _BusinesscategoryscreenState extends State<Businesscategoryscreen> {
                     contentPadding: EdgeInsets.zero,
                     title: Text(
                       "${widget.bCategory} Near You!",
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     subtitle: Row(
                       children: [
@@ -124,16 +186,27 @@ class _BusinesscategoryscreenState extends State<Businesscategoryscreen> {
                         Text(
                           isloading
                               ? "Finding businesses..."
-                              : "${allbusiness.length} Business found",
+                              : "${filteredBusiness.length} Business found",
                         ),
                       ],
                     ),
                   ),
-                
+
                   TextField(
+                    controller: businessSearchController,
+                    onChanged: filterBusinesses,
                     decoration: InputDecoration(
                       prefixIcon: Icon(Icons.search),
                       hintText: "Search Business Name",
+                      suffixIcon: businessSearchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: Icon(Icons.clear, size: 18),
+                              onPressed: () {
+                                businessSearchController.clear();
+                                filterBusinesses("");
+                              },
+                            )
+                          : null,
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(13),
                       ),
@@ -146,16 +219,14 @@ class _BusinesscategoryscreenState extends State<Businesscategoryscreen> {
                   SizedBox(height: height * 0.02),
                   Divider(),
                   SizedBox(height: height * 0.02),
-                
+
                   if (!hasLoaded || isloading)
                     Center(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 40),
                         child: Column(
                           children: [
-                            CircularProgressIndicator(
-                              color: Color(0xFFC9A96E),
-                            ),
+                            CircularProgressIndicator(color: Color(0xFFC9A96E)),
                             SizedBox(height: 16),
                             Text(
                               "Finding businesses near you...",
@@ -168,7 +239,7 @@ class _BusinesscategoryscreenState extends State<Businesscategoryscreen> {
                         ),
                       ),
                     )
-                  else if (allbusiness.isEmpty)
+                  else if (filteredBusiness.isEmpty)
                     Center(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 40),
@@ -202,17 +273,44 @@ class _BusinesscategoryscreenState extends State<Businesscategoryscreen> {
                                 Padding(
                                   padding: const EdgeInsets.all(8.0),
                                   child: TextField(
+                                    controller: searchController,
+                                    keyboardType: TextInputType.number,
                                     decoration: InputDecoration(
-                                      hintText: "Enter the radius (5KM to 10KM)",
-                                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
-                                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(15))
+                                      hintText:
+                                          "Enter the radius (5KM to 10KM)",
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(15),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(15),
+                                      ),
                                     ),
                                   ),
                                 ),
-                            // SizedBox(height: 7),
+                                // SizedBox(height: 7),
                                 OutlinedButton.icon(
-                                  onPressed: () {
+                                  onPressed: () async {
                                     FocusScope.of(context).unfocus();
+                                    if (searchController.text.isEmpty) {
+                                      CherryToast.error(
+                                        title: Text(
+                                          "search field cannot be empty",
+                                        ),
+                                      ).show(context);
+                                    }
+                                    if (int.tryParse(
+                                          searchController.text.toString(),
+                                        )! >
+                                        10) {
+                                      CherryToast.error(
+                                        title: Text(
+                                          "Radius range should be within 10KM",
+                                        ),
+                                      ).show(context);
+                                    }
+                                    await getAllBusinessForIncreasedRadius(
+                                      searchController.text,
+                                    );
                                   },
                                   icon: Icon(Icons.refresh, size: 16),
                                   label: Text("Fetch"),
@@ -232,25 +330,27 @@ class _BusinesscategoryscreenState extends State<Businesscategoryscreen> {
                     )
                   else
                     ListView.builder(
-                      itemCount: allbusiness.length,
+                      itemCount: filteredBusiness.length,
                       shrinkWrap: true,
                       physics: NeverScrollableScrollPhysics(),
                       itemBuilder: (context, index) {
-                        final data = allbusiness[index];
+                        final data = filteredBusiness[index];
                         final avatarInitials = data["BusinessName"]
                             .toString()
                             .split(" ")
                             .map((n) => n[0])
                             .join("")
                             .toUpperCase();
-                
+
                         return Padding(
                           padding: const EdgeInsets.only(top: 10),
                           child: Container(
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: const Color(0xFFE8E1D8)),
+                              border: Border.all(
+                                color: const Color(0xFFE8E1D8),
+                              ),
                             ),
                             padding: const EdgeInsets.all(16),
                             child: Column(
@@ -304,7 +404,8 @@ class _BusinesscategoryscreenState extends State<Businesscategoryscreen> {
                                               Expanded(
                                                 child: Text(
                                                   data["BusinessAddress"],
-                                                  overflow: TextOverflow.ellipsis,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
                                                   style: TextStyle(
                                                     fontSize: 12,
                                                     color: Color(0xFF8A7E72),
@@ -325,7 +426,8 @@ class _BusinesscategoryscreenState extends State<Businesscategoryscreen> {
                                 ),
                                 const SizedBox(height: 12),
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Row(
                                       children: [
@@ -345,17 +447,32 @@ class _BusinesscategoryscreenState extends State<Businesscategoryscreen> {
                                       ],
                                     ),
                                     ElevatedButton(
-                                      onPressed: () =>Navigator.push(context, MaterialPageRoute(builder: (context) => Queuescreen(bid: data["_id"], bname: data["BusinessName"], baddress: data["BusinessAddress"]),)),
+                                      onPressed: () => Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => Queuescreen(
+                                            bid: data["_id"],
+                                            bname: data["BusinessName"],
+                                            baddress: data["BusinessAddress"],
+                                          ),
+                                        ),
+                                      ),
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(0xFF1A1A2E),
-                                        foregroundColor: const Color(0xFFF5F0EB),
+                                        backgroundColor: const Color(
+                                          0xFF1A1A2E,
+                                        ),
+                                        foregroundColor: const Color(
+                                          0xFFF5F0EB,
+                                        ),
                                         elevation: 0,
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: 18,
                                           vertical: 9,
                                         ),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                         ),
                                       ),
                                       child: const Text(

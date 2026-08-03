@@ -21,7 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   TextEditingController emailController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
-  bool isloading =false;
+  bool isloading = false;
 
   static const Color navy = Color(0xFF1A1A2E);
   static const Color cream = Color(0xFFF5F0EB);
@@ -79,7 +79,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> handleLogin() async {
     setState(() {
-      isloading=true;
+      isloading = true;
     });
     try {
       final response = await http.post(
@@ -96,13 +96,22 @@ class _LoginScreenState extends State<LoginScreen> {
         SharedPreferences pref = await SharedPreferences.getInstance();
         pref.setString("token", decodedbody["token"]);
         print("Token Data => ${decodedbody["token"]}");
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Successfully logged in...redirecting to homepage"),
-            duration: Duration(seconds: 1),
-          ),
-        ).closed.then((value) => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Homescreen(),)),);
-
+        ScaffoldMessenger.of(context)
+            .showSnackBar(
+              SnackBar(
+                content: Text(
+                  "Successfully logged in...redirecting to homepage",
+                ),
+                duration: Duration(seconds: 1),
+              ),
+            )
+            .closed
+            .then(
+              (value) => Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => Homescreen()),
+              ),
+            );
       } else {
         print(
           "Some Error happened with code as ${response.statusCode} => ${response.body} ",
@@ -135,9 +144,9 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       print("Error => $e");
-    }finally{
+    } finally {
       setState(() {
-        isloading=false;
+        isloading = false;
       });
     }
   }
@@ -213,9 +222,15 @@ class _LoginScreenState extends State<LoginScreen> {
                             Icons.mail_outline_rounded,
                           ),
                           validator: (v) {
-                            if (v == null || v.isEmpty)
+                            if (v == null || v.trim().isEmpty) {
                               return "Enter your email";
-                            if (!v.contains('@')) return "Enter a valid email";
+                            }
+                            final emailRegex = RegExp(
+                              r'^[a-zA-Z0-9.!#$%&*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$',
+                            );
+                            if (!emailRegex.hasMatch(v.trim())) {
+                              return "Enter a valid email";
+                            }
                             return null;
                           },
                         ),
@@ -235,10 +250,26 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                           validator: (v) {
-                            if (v == null || v.isEmpty)
+                            if (v == null || v.isEmpty) {
                               return "Enter your password";
-                            if (v.length < 8)
+                            }
+                            if (v.length < 8) {
                               return "Password must be at least 8 characters";
+                            }
+                            if (!RegExp(r'[A-Z]').hasMatch(v)) {
+                              return "Include at least one uppercase letter";
+                            }
+                            if (!RegExp(r'[a-z]').hasMatch(v)) {
+                              return "Include at least one lowercase letter";
+                            }
+                            if (!RegExp(r'[0-9]').hasMatch(v)) {
+                              return "Include at least one number";
+                            }
+                            if (!RegExp(
+                              r'[!@#$%^&*(),.?":{}|<>]',
+                            ).hasMatch(v)) {
+                              return "Include at least one special character";
+                            }
                             return null;
                           },
                         ),
@@ -260,7 +291,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
-                            onPressed: () async{
+                            onPressed: () async {
                               if (_formKey.currentState!.validate()) {
                                 await handleLogin();
                               }
@@ -274,17 +305,21 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               elevation: 0,
                             ),
-                            child: isloading?Padding(
-                              padding: const EdgeInsets.all(3.0),
-                              child: Center(child: CircularProgressIndicator(),),
-                            ):const Text(
-                              "Sign in",
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
+                            child: isloading
+                                ? Padding(
+                                    padding: const EdgeInsets.all(3.0),
+                                    child: Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  )
+                                : const Text(
+                                    "Sign in",
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w500,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
                           ),
                         ),
                         const SizedBox(height: 20),

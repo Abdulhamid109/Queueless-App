@@ -45,7 +45,9 @@ class _SignupScreenState extends State<SignupScreen> {
     if (!PermissionGranted) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => LocationnError(screen: SignupScreen(),)),
+        MaterialPageRoute(
+          builder: (context) => LocationnError(screen: SignupScreen()),
+        ),
       );
       return;
     }
@@ -75,23 +77,25 @@ class _SignupScreenState extends State<SignupScreen> {
     });
   }
 
-  Future<void> handleSignup() async{
+  Future<void> handleSignup() async {
     setState(() {
-      isloading=true;
+      isloading = true;
     });
     try {
       final response = await http.post(
         Uri.parse("$BaseUrl/customer/auth/signup"),
-        headers: {'Content-Type':'application/json'},
+        headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'FullName':nameController.text.toString(),
-          'email':emailController.text.toString().toLowerCase(),
-          'password':passwordController.text,
-          'phone':phoneController.text,
-          'CustomerAddress':UpdatedAddress.isEmpty?currentAddress:UpdatedAddress,
-          'latitude':latitude,
-          'longitude':longitude,
-        })
+          'FullName': nameController.text.toString(),
+          'email': emailController.text.toString().toLowerCase(),
+          'password': passwordController.text,
+          'phone': phoneController.text,
+          'CustomerAddress': UpdatedAddress.isEmpty
+              ? currentAddress
+              : UpdatedAddress,
+          'latitude': latitude,
+          'longitude': longitude,
+        }),
       );
       if (response.statusCode == 200) {
         var decodedbody = jsonDecode(response.body);
@@ -100,12 +104,22 @@ class _SignupScreenState extends State<SignupScreen> {
         emailController.clear();
         passwordController.clear();
         phoneController.clear();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Successfully Account created...redirecting to LoginPage"),
-            duration: Duration(seconds: 1),
-          ),
-        ).closed.then((value) => Navigator.push(context, MaterialPageRoute(builder: (context) => LoginScreen(),)),);
+        ScaffoldMessenger.of(context)
+            .showSnackBar(
+              SnackBar(
+                content: Text(
+                  "Successfully Account created...redirecting to LoginPage",
+                ),
+                duration: Duration(seconds: 1),
+              ),
+            )
+            .closed
+            .then(
+              (value) => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => LoginScreen()),
+              ),
+            );
       } else {
         print(
           "Some Error happened with code as ${response.statusCode} => ${response.body} ",
@@ -138,10 +152,10 @@ class _SignupScreenState extends State<SignupScreen> {
       }
     } catch (e) {
       print("Something went wrong $e");
-    }finally{
+    } finally {
       setState(() {
-      isloading=false;
-    });
+        isloading = false;
+      });
     }
   }
 
@@ -200,7 +214,7 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   TextEditingController searchAddressController = TextEditingController();
-  Map<String,double> data = {};
+  Map<String, double> data = {};
 
   @override
   Widget build(BuildContext context) {
@@ -289,9 +303,15 @@ class _SignupScreenState extends State<SignupScreen> {
                             Icons.mail_outline_rounded,
                           ),
                           validator: (v) {
-                            if (v == null || v.isEmpty)
+                            if (v == null || v.trim().isEmpty) {
                               return "Enter your email";
-                            if (!v.contains('@')) return "Enter a valid email";
+                            }
+                            final emailRegex = RegExp(
+                              r'^[a-zA-Z0-9.!#$%&*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$',
+                            );
+                            if (!emailRegex.hasMatch(v.trim())) {
+                              return "Enter a valid email";
+                            }
                             return null;
                           },
                         ),
@@ -311,10 +331,26 @@ class _SignupScreenState extends State<SignupScreen> {
                             ),
                           ),
                           validator: (v) {
-                            if (v == null || v.isEmpty)
+                            if (v == null || v.isEmpty) {
                               return "Enter your password";
-                            if (v.length < 8)
+                            }
+                            if (v.length < 8) {
                               return "Password must be at least 8 characters";
+                            }
+                            if (!RegExp(r'[A-Z]').hasMatch(v)) {
+                              return "Include at least one uppercase letter";
+                            }
+                            if (!RegExp(r'[a-z]').hasMatch(v)) {
+                              return "Include at least one lowercase letter";
+                            }
+                            if (!RegExp(r'[0-9]').hasMatch(v)) {
+                              return "Include at least one number";
+                            }
+                            if (!RegExp(
+                              r'[!@#$%^&*(),.?":{}|<>]',
+                            ).hasMatch(v)) {
+                              return "Include at least one special character";
+                            }
                             return null;
                           },
                         ),
@@ -324,8 +360,19 @@ class _SignupScreenState extends State<SignupScreen> {
                           keyboardType: TextInputType.phone,
                           decoration: _fieldDecoration("Phone No", Icons.phone),
                           validator: (v) {
-                            if (v == null || v.isEmpty)
-                              return "Enter your Phone no";
+                            if (v == null || v.trim().isEmpty) {
+                              return "Enter your phone number";
+                            }
+                            final phone = v.trim().replaceAll(
+                              RegExp(r'[\s-]'),
+                              '',
+                            );
+                            final phoneRegex = RegExp(
+                              r'^(?:\+91|91)?[6-9]\d{9}$',
+                            );
+                            if (!phoneRegex.hasMatch(phone)) {
+                              return "Enter a valid Indian phone number";
+                            }
                             return null;
                           },
                         ),
@@ -346,7 +393,13 @@ class _SignupScreenState extends State<SignupScreen> {
                               children: [
                                 currentAddress.isEmpty
                                     ? Center(child: CircularProgressIndicator())
-                                    : Expanded(child: Text(currentAddress,overflow: TextOverflow.ellipsis,maxLines: 1,)),
+                                    : Expanded(
+                                        child: Text(
+                                          currentAddress,
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 1,
+                                        ),
+                                      ),
                                 ElevatedButton(
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: navy,
@@ -357,120 +410,157 @@ class _SignupScreenState extends State<SignupScreen> {
                                   onPressed: () {
                                     showDialog(
                                       barrierDismissible: false,
-                                      barrierColor: const Color.fromARGB(190, 0, 0, 0),
+                                      barrierColor: const Color.fromARGB(
+                                        190,
+                                        0,
+                                        0,
+                                        0,
+                                      ),
 
                                       context: context,
                                       builder: (context) {
-                                        return StatefulBuilder(builder: (context, setState) {
-                                          return AlertDialog(
-                                          title: Center(
-                                            child: Text(
-                                              "Select Your Address from the map",
-                                              style: TextStyle(fontSize: 16),
-                                              textAlign: TextAlign.center,
-                                            ),
-                                          ),
+                                        return StatefulBuilder(
+                                          builder: (context, setState) {
+                                            return AlertDialog(
+                                              title: Center(
+                                                child: Text(
+                                                  "Select Your Address from the map",
+                                                  style: TextStyle(
+                                                    fontSize: 16,
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                ),
+                                              ),
 
-                                          content: SizedBox(
-                                            width: width * 0.8,
+                                              content: SizedBox(
+                                                width: width * 0.8,
 
-                                            child: Column(
-                                              mainAxisSize: MainAxisSize.max,
-                                              children: [
-                                                Row(
+                                                child: Column(
+                                                  mainAxisSize:
+                                                      MainAxisSize.max,
                                                   children: [
-                                                    Expanded(
-                                                      child: TextFormField(
-                                                        keyboardType:
-                                                            TextInputType.text,
-                                                        controller: searchAddressController,
-                                                        decoration:
-                                                            _fieldDecoration(
-                                                              "location",
-                                                              Icons.search,
+                                                    Row(
+                                                      children: [
+                                                        Expanded(
+                                                          child: TextFormField(
+                                                            keyboardType:
+                                                                TextInputType
+                                                                    .text,
+                                                            controller:
+                                                                searchAddressController,
+                                                            decoration:
+                                                                _fieldDecoration(
+                                                                  "location",
+                                                                  Icons.search,
+                                                                ),
+                                                          ),
+                                                        ),
+
+                                                        SizedBox(width: 10),
+
+                                                        ElevatedButton(
+                                                          style: ElevatedButton.styleFrom(
+                                                            backgroundColor:
+                                                                navy,
+
+                                                            shape: RoundedRectangleBorder(
+                                                              borderRadius:
+                                                                  BorderRadius.circular(
+                                                                    7,
+                                                                  ),
                                                             ),
-                                                      ),
+                                                          ),
+
+                                                          onPressed: () async {
+                                                            data = await getLatLongfromAddress(
+                                                              searchAddressController
+                                                                  .text
+                                                                  .toString(),
+                                                            );
+                                                            setState(() {
+                                                              latitude =
+                                                                  data["lat"]
+                                                                      as double;
+                                                              longitude =
+                                                                  data["long"]
+                                                                      as double;
+                                                            });
+                                                          },
+
+                                                          child: Text(
+                                                            "Search",
+                                                            style: TextStyle(
+                                                              color: cream,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
                                                     ),
 
-                                                    SizedBox(width: 10),
-
-                                                    ElevatedButton(
-                                                      style: ElevatedButton.styleFrom(
-                                                        backgroundColor: navy,
-
-                                                        shape: RoundedRectangleBorder(
-                                                          borderRadius:
-                                                              BorderRadius.circular(
-                                                                7,
-                                                              ),
-                                                        ),
-                                                      ),
-
-                                                      onPressed: () async{
-                                                        data = await getLatLongfromAddress(searchAddressController.text.toString());
+                                                    //here we wiill display our map
+                                                    SizedBox(height: 10),
+                                                    Expanded(
+                                                      child: FlutterMapp(
+                                                        latitude: latitude,
+                                                        longitude: longitude,
+                                                        onAddressChange:
+                                                            (value, lat, long) {
                                                               setState(() {
-                                                                latitude = data["lat"] as double;
-                                                                longitude = data["long"] as double;
-                                                              });
-                                                      },
+                                                                print(
+                                                                  "The Address comming from the Child widget---- $value",
+                                                                );
+                                                                UpdatedAddress =
+                                                                    value;
+                                                                latitude = lat;
+                                                                longitude =
+                                                                    long;
 
-                                                      child: Text(
-                                                        "Search",
-                                                        style: TextStyle(
-                                                          color: cream,
-                                                        ),
+                                                                print(
+                                                                  "The Address comming from the Child widget---- $UpdatedAddress",
+                                                                );
+                                                              });
+                                                            },
                                                       ),
                                                     ),
                                                   ],
                                                 ),
-
-                                                //here we wiill display our map
-                                                SizedBox(height: 10),
-                                                Expanded(
-                                                  child: FlutterMapp(
-                                                    latitude: latitude,
-                                                    longitude: longitude,
-                                                    onAddressChange: (value,lat,long) {
-                                                      setState(() {
-                                                        print("The Address comming from the Child widget---- $value");
-                                                        UpdatedAddress = value;
-                                                        latitude=lat;
-                                                        longitude=long;
-
-                                                        print("The Address comming from the Child widget---- $UpdatedAddress");
-                                                      });
-                                                      
-                                                    },
-                                                  ),
+                                              ),
+                                              actions: [
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      .spaceBetween,
+                                                  children: [
+                                                    UpdatedAddress.isEmpty
+                                                        ? Text("")
+                                                        : TextButton(
+                                                            onPressed: () {
+                                                              this.setState(() {
+                                                                currentAddress =
+                                                                    UpdatedAddress;
+                                                                latitude =
+                                                                    latitude;
+                                                              });
+                                                              Navigator.pop(
+                                                                context,
+                                                              );
+                                                            },
+                                                            child: Text(
+                                                              "Save Address",
+                                                            ),
+                                                          ),
+                                                    TextButton(
+                                                      onPressed: () =>
+                                                          Navigator.pop(
+                                                            context,
+                                                          ),
+                                                      child: Text("Close Map"),
+                                                    ),
+                                                  ],
                                                 ),
                                               ],
-                                            ),
-                                          ),
-                                          actions: [
-                                            Row(
-                                              mainAxisAlignment: .spaceBetween,
-                                              children: [
-                                                UpdatedAddress.isEmpty?Text(""):TextButton(
-                                                  onPressed: (){
-                                                    this.setState((){
-                                                      currentAddress = UpdatedAddress;
-                                                      latitude = latitude;
-                                                    });
-                                                    Navigator.pop(context);
-                                                  },
-                                                  child: Text("Save Address"),
-                                                ),
-                                                TextButton(
-                                                  onPressed: () =>
-                                                      Navigator.pop(context),
-                                                  child: Text("Close Map"),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
+                                            );
+                                          },
                                         );
-                                      
-                                        },);
                                       },
                                     );
                                   },
@@ -482,7 +572,6 @@ class _SignupScreenState extends State<SignupScreen> {
                                 ),
                               ],
                             ),
-                          
                           ),
                         ),
 
@@ -504,16 +593,16 @@ class _SignupScreenState extends State<SignupScreen> {
                               ),
                               elevation: 0,
                             ),
-                            child: isloading?
-                            Center(child: CircularProgressIndicator(),)
-                            :const Text(
-                              "Sign up",
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
+                            child: isloading
+                                ? Center(child: CircularProgressIndicator())
+                                : const Text(
+                                    "Sign up",
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w500,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
                           ),
                         ),
                         const SizedBox(height: 20),
@@ -556,35 +645,35 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  Widget _socialButton(String letter, String label, {IconData? icon}) {
-    return OutlinedButton(
-      onPressed: () {},
-      style: OutlinedButton.styleFrom(
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF4A4A4A),
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        side: const BorderSide(color: border, width: 1.5),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          icon != null
-              ? Icon(icon, size: 16, color: const Color(0xFF4A4A4A))
-              : Text(
-                  letter,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _socialButton(String letter, String label, {IconData? icon}) {
+  //   return OutlinedButton(
+  //     onPressed: () {},
+  //     style: OutlinedButton.styleFrom(
+  //       backgroundColor: Colors.white,
+  //       foregroundColor: const Color(0xFF4A4A4A),
+  //       padding: const EdgeInsets.symmetric(vertical: 12),
+  //       side: const BorderSide(color: border, width: 1.5),
+  //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  //     ),
+  //     child: Row(
+  //       mainAxisAlignment: MainAxisAlignment.center,
+  //       children: [
+  //         icon != null
+  //             ? Icon(icon, size: 16, color: const Color(0xFF4A4A4A))
+  //             : Text(
+  //                 letter,
+  //                 style: const TextStyle(
+  //                   fontWeight: FontWeight.bold,
+  //                   fontSize: 14,
+  //                 ),
+  //               ),
+  //         const SizedBox(width: 6),
+  //         Text(
+  //           label,
+  //           style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 }
