@@ -4,6 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:queueless/Customer/HomeScreen.dart';
 import 'package:queueless/Customer/SignupScreen.dart';
+import 'package:queueless/Customer/forgotPasswordScreen.dart';
 import 'package:queueless/admin/LoginScreen.dart';
 import 'package:http/http.dart' as http;
 import 'package:queueless/constant/env.dart';
@@ -151,6 +152,14 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future forgotPassword() async {
+    try {
+
+    } catch (e) {
+      debugPrint("Error occured => $e");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -277,12 +286,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         Align(
                           alignment: Alignment.centerRight,
-                          child: Text(
-                            "Forgot password?",
-                            style: TextStyle(
-                              color: gold,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
+                          child: GestureDetector(
+                            onTap: ()=>Navigator.push(context, MaterialPageRoute(builder: (context) => Forgotpasswordscreen(),)),
+                            child: Text(
+                              "Forgot password?",
+                              style: TextStyle(
+                                color: gold,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                         ),

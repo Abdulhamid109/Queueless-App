@@ -1,9 +1,11 @@
 import 'dart:convert';
 
+import 'package:cherry_toast/cherry_toast.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:queueless/Customer/LoginScreen.dart';
+import 'package:queueless/Customer/otpScreen.dart';
 import 'package:queueless/Widgets/flutter_mapp.dart';
 import 'package:queueless/Widgets/locationn_error.dart';
 import 'package:queueless/constant/env.dart';
@@ -11,6 +13,7 @@ import 'package:queueless/helper/RequestLocationPermission.dart';
 import 'package:queueless/helper/getAddressFromLatLong.dart';
 import 'package:queueless/helper/getLatLlongfromAddress.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -77,49 +80,43 @@ class _SignupScreenState extends State<SignupScreen> {
     });
   }
 
-  Future<void> handleSignup() async {
+  Future<void> handlePreSignup() async {
     setState(() {
       isloading = true;
     });
     try {
-      final response = await http.post(
-        Uri.parse("$BaseUrl/customer/auth/signup"),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'FullName': nameController.text.toString(),
-          'email': emailController.text.toString().toLowerCase(),
-          'password': passwordController.text,
-          'phone': phoneController.text,
-          'CustomerAddress': UpdatedAddress.isEmpty
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      prefs.setString("FullName", nameController.text.toString()); 
+      prefs.setString("email", emailController.text.toLowerCase()); 
+      prefs.setString("password", passwordController.text); 
+      prefs.setString("phone", phoneController.text); 
+      prefs.setString("CustomerAddress", UpdatedAddress.isEmpty
               ? currentAddress
-              : UpdatedAddress,
-          'latitude': latitude,
-          'longitude': longitude,
-        }),
-      );
+              : UpdatedAddress); 
+      prefs.setDouble("latitude", latitude); 
+      prefs.setDouble("longitude", longitude);
+
+      debugPrint("Email => ${emailController.text}");
+
+      final response = await http.post(
+        Uri.parse("$BaseUrl/customer/auth/presignup"),
+        headers: {'Content-Type':'application/json'},
+        body: jsonEncode({
+          'email': emailController.text.toLowerCase().toString()
+        })
+      ); 
+
       if (response.statusCode == 200) {
-        var decodedbody = jsonDecode(response.body);
-        print("Data Body => ${decodedbody}");
-        nameController.clear();
-        emailController.clear();
-        passwordController.clear();
-        phoneController.clear();
-        ScaffoldMessenger.of(context)
-            .showSnackBar(
-              SnackBar(
-                content: Text(
-                  "Successfully Account created...redirecting to LoginPage",
-                ),
-                duration: Duration(seconds: 1),
-              ),
-            )
-            .closed
-            .then(
-              (value) => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => LoginScreen()),
-              ),
-            );
+
+        // nameController.clear();
+        // passwordController.clear();
+        // phoneController.clear();
+        CherryToast.success(
+          title: Text("Successfully sent the OTP Email"),
+        ).show(context);
+        Navigator.push(context, MaterialPageRoute(builder: (context) => OTPScreen(registeredEmail: emailController.text.trim().toString(),reason: "signup",),));
+        // emailController.clear();
+
       } else {
         print(
           "Some Error happened with code as ${response.statusCode} => ${response.body} ",
@@ -158,6 +155,7 @@ class _SignupScreenState extends State<SignupScreen> {
       });
     }
   }
+
 
   InputDecoration _fieldDecoration(
     String label,
@@ -579,9 +577,9 @@ class _SignupScreenState extends State<SignupScreen> {
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
-                            onPressed: () {
+                            onPressed: () async{
                               if (_formKey.currentState!.validate()) {
-                                handleSignup();
+                                await handlePreSignup();
                               }
                             },
                             style: ElevatedButton.styleFrom(
