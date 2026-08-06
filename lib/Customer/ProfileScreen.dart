@@ -53,65 +53,75 @@ class _ProfilescreenState extends State<Profilescreen> {
     }
   }
 
-  // Future<void> _handleNotificationTap(BuildContext context) async {
-  //   final status = await Permission.notification.status;
+Future<void> _handleNotificationTap(BuildContext context) async {
+    try {
+        // debugPrint("Checking notification permission...");
+        final status = await Permission.notification.status;
+        // debugPrint("Status: $status");
 
-  //   if (status.isGranted) {
-  //     if (context.mounted) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(content: Text("Notifications are already enabled")),
-  //       );
-  //     }
-  //     return;
-  //   }
+        if (status.isGranted) {
+            if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Notifications are already enabled")),
+                );
+            }
+            return;
+        }
 
-  //   if (status.isDenied) {
-  //     final result = await Permission.notification.request();
+        if (status.isDenied) {
+            final result = await Permission.notification.request();
+            debugPrint("Request result: $result");
 
-  //     if (result.isGranted) {
-  //       if (context.mounted) {
-  //         ScaffoldMessenger.of(context).showSnackBar(
-  //           SnackBar(content: Text("Notifications enabled")),
-  //         );
-  //       }
-  //       return;
-  //     }
+            if (result.isGranted) {
+                if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("Notifications enabled")),
+                    );
+                }
+                return;
+            }
 
-  //     if (result.isPermanentlyDenied && context.mounted) {
-  //       _showEnableNotificationDialog(context);
-  //     }
-  //     return;
-  //   }
+            if(result.isDenied && context.mounted){
+              _showEnableNotificationDialog(context);
+            }
+            if (result.isPermanentlyDenied && context.mounted) {
+                _showEnableNotificationDialog(context);
+            }
+            return;
+        }
 
-  //   if (status.isPermanentlyDenied && context.mounted) {
-  //     _showEnableNotificationDialog(context);
-  //   }
-  // }
+        if (status.isPermanentlyDenied && context.mounted) {
+            _showEnableNotificationDialog(context);
+        }
+    } catch (e) {
+        debugPrint("Notification permission error: $e");
+    }
+}
 
-  // void _showEnableNotificationDialog(BuildContext context) {
-  //   showDialog(
-  //     context: context,
-  //     builder: (context) => AlertDialog(
-  //       title: Text("Enable Notifications"),
-  //       content: Text(
-  //         "Turn on notifications to get updates when your turn is coming up in the queue.",
-  //       ),
-  //       actions: [
-  //         TextButton(
-  //           onPressed: () => Navigator.pop(context),
-  //           child: Text("Not Now"),
-  //         ),
-  //         TextButton(
-  //           onPressed: () {
-  //             Navigator.pop(context);
-  //             openAppSettings();
-  //           },
-  //           child: Text("Open Settings"),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
+  void _showEnableNotificationDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Enable Notifications"),
+        content: Text(
+          "Turn on notifications to get updates when your turn is coming up in the queue.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text("Not Now"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              openAppSettings();
+            },
+            child: Text("Open Settings"),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -284,6 +294,18 @@ class _ProfilescreenState extends State<Profilescreen> {
                       color: Colors.white,
                       child: Column(
                         children: [
+                          ListTile(
+                            leading: Card(
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Icon(Icons.notifications),
+                              ),
+                            ),
+                            title: Text("Notifications"),
+                            trailing: Icon(Icons.arrow_forward_ios, size: 12),
+                            onTap: () => _handleNotificationTap(context),
+                          ),
+                          Divider(thickness: 0.3),
                           ListTile(
                             leading: Card(
                               child: Padding(
