@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:queueless/Customer/FeedbackScreen.dart';
 import 'package:queueless/Customer/LoginScreen.dart';
 import 'package:queueless/Widgets/CustomerAppbar.dart';
@@ -10,8 +11,6 @@ import 'package:http/http.dart' as http;
 import 'package:queueless/constant/env.dart';
 import 'package:queueless/helper/handleLogoutFunctionality.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:app_settings/app_settings.dart';
-
 
 class Profilescreen extends StatefulWidget {
   const Profilescreen({super.key});
@@ -54,9 +53,68 @@ class _ProfilescreenState extends State<Profilescreen> {
     }
   }
 
+  // Future<void> _handleNotificationTap(BuildContext context) async {
+  //   final status = await Permission.notification.status;
+
+  //   if (status.isGranted) {
+  //     if (context.mounted) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(content: Text("Notifications are already enabled")),
+  //       );
+  //     }
+  //     return;
+  //   }
+
+  //   if (status.isDenied) {
+  //     final result = await Permission.notification.request();
+
+  //     if (result.isGranted) {
+  //       if (context.mounted) {
+  //         ScaffoldMessenger.of(context).showSnackBar(
+  //           SnackBar(content: Text("Notifications enabled")),
+  //         );
+  //       }
+  //       return;
+  //     }
+
+  //     if (result.isPermanentlyDenied && context.mounted) {
+  //       _showEnableNotificationDialog(context);
+  //     }
+  //     return;
+  //   }
+
+  //   if (status.isPermanentlyDenied && context.mounted) {
+  //     _showEnableNotificationDialog(context);
+  //   }
+  // }
+
+  // void _showEnableNotificationDialog(BuildContext context) {
+  //   showDialog(
+  //     context: context,
+  //     builder: (context) => AlertDialog(
+  //       title: Text("Enable Notifications"),
+  //       content: Text(
+  //         "Turn on notifications to get updates when your turn is coming up in the queue.",
+  //       ),
+  //       actions: [
+  //         TextButton(
+  //           onPressed: () => Navigator.pop(context),
+  //           child: Text("Not Now"),
+  //         ),
+  //         TextButton(
+  //           onPressed: () {
+  //             Navigator.pop(context);
+  //             openAppSettings();
+  //           },
+  //           child: Text("Open Settings"),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     _profileDataFuture = getProfile();
   }
@@ -83,11 +141,11 @@ class _ProfilescreenState extends State<Profilescreen> {
                   .map((n) => n[0])
                   .join("")
                   .toUpperCase();
-              // print(avatarIntials);
+
               return Padding(
                 padding: const EdgeInsets.all(25.0),
                 child: Column(
-                  crossAxisAlignment: .start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Opacity(opacity: 0.5, child: Text("Account")),
                     Text(
@@ -108,11 +166,11 @@ class _ProfilescreenState extends State<Profilescreen> {
                             radius: 30,
                             child: Text(avatarIntials),
                           ),
-                          title: Text(snapshot.data!["Data"]["name"]),
+                          title: Text(snapshot.data!["Data"]["name"] ?? ""),
                           subtitle: Column(
-                            crossAxisAlignment: .start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(snapshot.data!["Data"]["email"]),
+                              Text(snapshot.data!["Data"]["email"] ?? ""),
                               SizedBox(height: height * 0.01),
                               Container(
                                 decoration: BoxDecoration(
@@ -130,7 +188,7 @@ class _ProfilescreenState extends State<Profilescreen> {
                                 child: Padding(
                                   padding: const EdgeInsets.all(4.0),
                                   child: Text(
-                                    snapshot.data!["Data"]["role"],
+                                    snapshot.data!["Data"]["role"] ?? "",
                                     style: TextStyle(
                                       color: Colors.amber.shade900,
                                     ),
@@ -161,7 +219,7 @@ class _ProfilescreenState extends State<Profilescreen> {
                               child: Text("Full Name"),
                             ),
                             subtitle: Text(
-                              snapshot.data!["Data"]["name"],
+                              snapshot.data!["Data"]["name"] ?? "Not provided",
                               style: TextStyle(fontWeight: FontWeight.bold),
                             ),
                           ),
@@ -175,7 +233,7 @@ class _ProfilescreenState extends State<Profilescreen> {
                             ),
                             title: Opacity(opacity: 0.5, child: Text("Email")),
                             subtitle: Text(
-                              snapshot.data!["Data"]["email"],
+                              snapshot.data!["Data"]["email"] ?? "Not provided",
                               style: TextStyle(fontWeight: FontWeight.bold),
                             ),
                           ),
@@ -192,7 +250,7 @@ class _ProfilescreenState extends State<Profilescreen> {
                               child: Text("Phone No"),
                             ),
                             subtitle: Text(
-                              snapshot.data!["Data"]["phone"],
+                              snapshot.data!["Data"]["phone"] ?? "Not provided",
                               style: TextStyle(fontWeight: FontWeight.bold),
                             ),
                           ),
@@ -209,7 +267,8 @@ class _ProfilescreenState extends State<Profilescreen> {
                               child: Text("Address"),
                             ),
                             subtitle: Text(
-                              snapshot.data!["Data"]["CustomerAddress"],
+                              snapshot.data!["Data"]["CustomerAddress"] ??
+                                  "Not provided",
                               style: TextStyle(fontWeight: FontWeight.bold),
                             ),
                           ),
@@ -229,26 +288,17 @@ class _ProfilescreenState extends State<Profilescreen> {
                             leading: Card(
                               child: Padding(
                                 padding: const EdgeInsets.all(8.0),
-                                child: Icon(Icons.notifications),
-                              ),
-                            ),
-                            title: Text("Notifications"),
-                            trailing: Icon(Icons.arrow_forward_ios, size: 12),
-                            onTap: ()async{
-                              await AppSettings.openAppSettings(type: AppSettingsType.notification);
-                            },
-                          ),
-                          Divider(thickness: 0.3),
-                          ListTile(
-                            leading: Card(
-                              child: Padding(
-                                padding: const EdgeInsets.all(8.0),
                                 child: Icon(Icons.feedback),
                               ),
                             ),
                             title: Text("Send Feedback"),
                             trailing: Icon(Icons.arrow_forward_ios, size: 12),
-                            onTap: ()=>Navigator.push(context, MaterialPageRoute(builder: (context) => Feedbackscreen(),)),
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => Feedbackscreen(),
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -258,7 +308,6 @@ class _ProfilescreenState extends State<Profilescreen> {
                     SizedBox(
                       width: double.infinity,
                       child: Row(
-                        // mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Expanded(
                             child: ElevatedButton(
@@ -270,7 +319,14 @@ class _ProfilescreenState extends State<Profilescreen> {
                                 ),
                                 backgroundColor: Colors.blue,
                               ),
-                              onPressed: () {},
+                              onPressed: () {
+                                showDialog(context: context, builder: (context) {
+                                  return AlertDialog(
+                                    title: Text("Under-development"),
+                                    content: Text("The Edit Profile functionality is of mid to low priority functionality and will be developed in upcomming builds"),
+                                  );
+                                },);
+                              },
                               child: Text(
                                 "Edit",
                                 style: TextStyle(color: Colors.white),
@@ -289,7 +345,7 @@ class _ProfilescreenState extends State<Profilescreen> {
                                 backgroundColor: Colors.red,
                               ),
                               onPressed: () {
-                                onhandleLogout(context,LoginScreen());
+                                onhandleLogout(context, LoginScreen());
                               },
                               child: Text(
                                 "Logout",
