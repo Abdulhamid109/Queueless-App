@@ -145,12 +145,14 @@ class _HomescreenState extends State<Homescreen> {
                       children: [
                         Icon(Icons.location_pin, color: Colors.green),
                         SizedBox(width: 5),
-                        Opacity(
-                          opacity: 0.5,
-                          child: Text(
-                            asyncSnapshot.data!["Data"]["CustomerAddress"]??"Miraj-MH10",
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
+                        Expanded(
+                          child: Opacity(
+                            opacity: 0.5,
+                            child: Text(
+                              asyncSnapshot.data!["Data"]["CustomerAddress"]??"Miraj-MH10",
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
                           ),
                         ),
                       ],

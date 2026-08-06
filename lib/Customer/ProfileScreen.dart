@@ -10,6 +10,8 @@ import 'package:http/http.dart' as http;
 import 'package:queueless/constant/env.dart';
 import 'package:queueless/helper/handleLogoutFunctionality.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:app_settings/app_settings.dart';
+
 
 class Profilescreen extends StatefulWidget {
   const Profilescreen({super.key});
@@ -232,17 +234,9 @@ class _ProfilescreenState extends State<Profilescreen> {
                             ),
                             title: Text("Notifications"),
                             trailing: Icon(Icons.arrow_forward_ios, size: 12),
-                          ),
-                          Divider(thickness: 0.3),
-                          ListTile(
-                            leading: Card(
-                              child: Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Icon(Icons.lock),
-                              ),
-                            ),
-                            title: Text("Change Password"),
-                            trailing: Icon(Icons.arrow_forward_ios, size: 12),
+                            onTap: ()async{
+                              await AppSettings.openAppSettings(type: AppSettingsType.notification);
+                            },
                           ),
                           Divider(thickness: 0.3),
                           ListTile(

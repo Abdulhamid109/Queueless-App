@@ -35,16 +35,12 @@ class _OTPScreenState extends State<OTPScreen> {
       final response = await http.post(
         Uri.parse("$BaseUrl/customer/auth/validateOTP"),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({"OTP": OTP.text,"email":widget.registeredEmail}),
+        body: jsonEncode({"OTP": OTP.text, "email": widget.registeredEmail}),
       );
 
-      print("Email=>${widget.registeredEmail}");
-
       if (response.statusCode == 200) {
-          print("Im here");
         if (widget.reason.toLowerCase() == "signup") {
           //signup method;
-          print("Im here 2");
           SharedPreferences prefs = await SharedPreferences.getInstance();
           final response = await http.post(
             Uri.parse("$BaseUrl/customer/auth/signup"),
@@ -59,7 +55,6 @@ class _OTPScreenState extends State<OTPScreen> {
               'longitude': prefs.getDouble("longitude"),
             }),
           );
-          debugPrint("Signup response: ${response.statusCode} => ${response.body}"); // 👈 add this
 
           if (response.statusCode == 200) {
             print("Im here3");
@@ -77,37 +72,41 @@ class _OTPScreenState extends State<OTPScreen> {
               context,
               MaterialPageRoute(builder: (context) => LoginScreen()),
             );
-          }else {
-        print(
-          "Some Error happened with code as ${response.statusCode} => ${response.body} ",
-        );
-        var error = jsonDecode(response.body);
-        final messenger = ScaffoldMessenger.of(context);
-        messenger.showMaterialBanner(
-          MaterialBanner(
-            backgroundColor: Colors.red.shade200,
-            leading: Icon(Icons.error, color: Colors.red),
-            content: Text(error["error"]),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  messenger.hideCurrentMaterialBanner();
-                },
-                child: Text(
-                  "Dismiss",
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w300),
-                ),
-              ),
-            ],
-          ),
-        );
-        Future.delayed(Duration(seconds: 5), () {
-          if (messenger.mounted) {
-            messenger.hideCurrentMaterialBanner();
           }
-        });
-      }
-      return;
+          if (response.statusCode != 200) {
+            print(
+              "Some Error happened with code as ${response.statusCode} => ${response.body} ",
+            );
+            var error = jsonDecode(response.body);
+            final messenger = ScaffoldMessenger.of(context);
+            messenger.showMaterialBanner(
+              MaterialBanner(
+                backgroundColor: Colors.red.shade200,
+                leading: Icon(Icons.error, color: Colors.red),
+                content: Text(error["error"]),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      messenger.hideCurrentMaterialBanner();
+                    },
+                    child: Text(
+                      "Dismiss",
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w300,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+            Future.delayed(Duration(seconds: 5), () {
+              if (messenger.mounted) {
+                messenger.hideCurrentMaterialBanner();
+              }
+            });
+          }
+          return;
         }
         Navigator.push(
           context,
@@ -117,8 +116,13 @@ class _OTPScreenState extends State<OTPScreen> {
           ),
         );
       }
-                debugPrint("validation response: ${response.statusCode} => ${response.body}"); // 👈 add this
-
+      if(response.statusCode!=200){
+        final resbody = await jsonDecode(response.body);
+          debugPrint("Error -> ${resbody["error"]} - ${response.statusCode}");
+          CherryToast.error(
+            title: Text(resbody["error"]),
+          ).show(context);
+        }
     } catch (e) {
       debugPrint("Error => $e");
     } finally {
