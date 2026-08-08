@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:cherry_toast/cherry_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -24,12 +23,20 @@ class _BusinesscategoryscreenState extends State<Businesscategoryscreen> {
   List<dynamic> allbusiness = [];
   bool isloading = false;
   bool hasLoaded = false;
+
   double latitude = 0;
   double longitude = 0;
 
   TextEditingController searchController = TextEditingController();
+
   TextEditingController businessSearchController = TextEditingController();
+
   List<dynamic> filteredBusiness = [];
+
+  final Color primaryGreen = const Color(0xFF159447);
+  final Color lightGreen = const Color(0xFFEAF7EF);
+  final Color darkText = const Color(0xFF171717);
+  final Color secondaryText = const Color(0xFF777777);
 
   void filterBusinesses(String query) {
     setState(() {
@@ -49,6 +56,7 @@ class _BusinesscategoryscreenState extends State<Businesscategoryscreen> {
 
   Future<void> getCurrentLocation() async {
     final PermissionGranted = await requestLocationPermission();
+
     if (!PermissionGranted) {
       Navigator.push(
         context,
@@ -58,6 +66,7 @@ class _BusinesscategoryscreenState extends State<Businesscategoryscreen> {
           ),
         ),
       );
+
       return;
     }
 
@@ -80,6 +89,7 @@ class _BusinesscategoryscreenState extends State<Businesscategoryscreen> {
     setState(() {
       isloading = true;
     });
+
     try {
       final response = await http.post(
         Uri.parse(
@@ -90,12 +100,14 @@ class _BusinesscategoryscreenState extends State<Businesscategoryscreen> {
       );
 
       final responseBody = jsonDecode(response.body);
+
       if (response.statusCode == 200) {
         setState(() {
           allbusiness = responseBody["data"];
           filteredBusiness = allbusiness;
         });
       }
+
       if (response.statusCode != 200) {
         throw Exception("Error => ${response.statusCode} -- ${response.body}");
       }
@@ -113,6 +125,7 @@ class _BusinesscategoryscreenState extends State<Businesscategoryscreen> {
     setState(() {
       isloading = true;
     });
+
     try {
       final response = await http.post(
         Uri.parse("$BaseUrl/admin/getBusinessBasedonRad/${widget.bCategory}"),
@@ -123,12 +136,15 @@ class _BusinesscategoryscreenState extends State<Businesscategoryscreen> {
           "radius": radius,
         }),
       );
+
       if (response.statusCode == 200) {
         final resbody = await jsonDecode(response.body);
+
         setState(() {
           allbusiness = resbody["data"];
           filteredBusiness = allbusiness;
         });
+
         CherryToast.success(
           title: Text(
             "Successfully fetched businesses within the range of ${searchController.text} KM",
@@ -161,77 +177,152 @@ class _BusinesscategoryscreenState extends State<Businesscategoryscreen> {
         FocusScope.of(context).unfocus();
       },
       child: Scaffold(
+        backgroundColor: const Color(0xFFF9FAF9),
+
         appBar: Customerappbar(),
+
         drawer: Customerdrawer(),
+
         body: RefreshIndicator(
+          color: primaryGreen,
           onRefresh: () => getCurrentLocation(),
+
           child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+
             child: Padding(
-              padding: const EdgeInsets.all(28.0),
+              padding: const EdgeInsets.fromLTRB(22, 20, 22, 30),
+
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+
                 children: [
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(
-                      "${widget.bCategory} Near You!",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    subtitle: Row(
-                      children: [
-                        Icon(Icons.location_pin, color: Colors.green, size: 15),
-                        Text(
-                          isloading
-                              ? "Finding businesses..."
-                              : "${filteredBusiness.length} Business found",
-                        ),
-                      ],
+                  Text(
+                    "${widget.bCategory} Near You",
+                    style: TextStyle(
+                      fontSize: 25,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.4,
+                      color: darkText,
                     ),
                   ),
+
+                  const SizedBox(height: 7),
+
+                  Row(
+                    children: [
+                      Container(
+                        height: 28,
+                        width: 28,
+                        decoration: BoxDecoration(
+                          color: lightGreen,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.location_on_outlined,
+                          color: primaryGreen,
+                          size: 17,
+                        ),
+                      ),
+
+                      const SizedBox(width: 7),
+
+                      Text(
+                        isloading
+                            ? "Finding businesses..."
+                            : "${filteredBusiness.length} businesses found",
+                        style: TextStyle(fontSize: 13, color: secondaryText),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 22),
 
                   TextField(
                     controller: businessSearchController,
                     onChanged: filterBusinesses,
+
                     decoration: InputDecoration(
-                      prefixIcon: Icon(Icons.search),
-                      hintText: "Search Business Name",
+                      filled: true,
+                      fillColor: Colors.white,
+
+                      prefixIcon: Icon(
+                        Icons.search_rounded,
+                        color: primaryGreen,
+                      ),
+
+                      hintText: "Search business name",
+
+                      hintStyle: TextStyle(
+                        color: Colors.grey.shade400,
+                        fontSize: 14,
+                      ),
+
                       suffixIcon: businessSearchController.text.isNotEmpty
                           ? IconButton(
-                              icon: Icon(Icons.clear, size: 18),
+                              icon: Icon(
+                                Icons.clear_rounded,
+                                size: 18,
+                                color: Colors.grey.shade500,
+                              ),
                               onPressed: () {
                                 businessSearchController.clear();
+
                                 filterBusinesses("");
                               },
                             )
                           : null,
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(13),
+
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 15,
                       ),
+
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: Colors.grey.shade200),
+                      ),
+
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: Colors.grey.shade200),
+                      ),
+
                       focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.green),
-                        borderRadius: BorderRadius.circular(13),
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: primaryGreen, width: 1.2),
                       ),
                     ),
                   ),
-                  SizedBox(height: height * 0.02),
-                  Divider(),
-                  SizedBox(height: height * 0.02),
+
+                  SizedBox(height: height * 0.025),
+
+                  Divider(thickness: 0.5, color: Colors.grey.shade200),
+
+                  SizedBox(height: height * 0.025),
 
                   if (!hasLoaded || isloading)
                     Center(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 40),
+                        padding: const EdgeInsets.symmetric(vertical: 45),
+
                         child: Column(
                           children: [
-                            CircularProgressIndicator(color: Color(0xFFC9A96E)),
-                            SizedBox(height: 16),
+                            SizedBox(
+                              height: 30,
+                              width: 30,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                color: primaryGreen,
+                              ),
+                            ),
+
+                            const SizedBox(height: 15),
+
                             Text(
                               "Finding businesses near you...",
                               style: TextStyle(
-                                color: Color(0xFF8A7E72),
+                                color: secondaryText,
                                 fontSize: 13,
                               ),
                             ),
@@ -242,87 +333,154 @@ class _BusinesscategoryscreenState extends State<Businesscategoryscreen> {
                   else if (filteredBusiness.isEmpty)
                     Center(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 40),
+                        padding: const EdgeInsets.symmetric(vertical: 35),
+
                         child: Column(
                           children: [
-                            Icon(
-                              Icons.store_mall_directory_outlined,
-                              size: 48,
-                              color: Color(0xFFE8E1D8),
+                            Container(
+                              height: 72,
+                              width: 72,
+                              decoration: BoxDecoration(
+                                color: lightGreen,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.storefront_outlined,
+                                size: 34,
+                                color: primaryGreen,
+                              ),
                             ),
-                            SizedBox(height: 12),
+
+                            const SizedBox(height: 15),
+
                             Text(
                               "No ${widget.bCategory} found nearby",
+                              textAlign: TextAlign.center,
                               style: TextStyle(
-                                fontSize: 15,
+                                fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xFF1A1A2E),
+                                color: darkText,
                               ),
                             ),
-                            SizedBox(height: 6),
+
+                            const SizedBox(height: 6),
+
                             Text(
                               "Try expanding your search radius.",
+                              textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 13,
-                                color: Color(0xFF8A7E72),
+                                color: secondaryText,
                               ),
                             ),
-                            SizedBox(height: 16),
-                            Column(
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: TextField(
-                                    controller: searchController,
-                                    keyboardType: TextInputType.number,
-                                    decoration: InputDecoration(
-                                      hintText:
-                                          "Enter the radius (5KM to 10KM)",
-                                      enabledBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(15),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(15),
-                                      ),
-                                    ),
+
+                            const SizedBox(height: 18),
+
+                            TextField(
+                              controller: searchController,
+                              keyboardType: TextInputType.number,
+
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: Colors.white,
+
+                                hintText: "Enter radius (5KM to 10KM)",
+
+                                hintStyle: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey.shade400,
+                                ),
+
+                                prefixIcon: Icon(
+                                  Icons.radar_outlined,
+                                  color: primaryGreen,
+                                  size: 21,
+                                ),
+
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 15,
+                                ),
+
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  borderSide: BorderSide(
+                                    color: Colors.grey.shade200,
                                   ),
                                 ),
-                                // SizedBox(height: 7),
-                                OutlinedButton.icon(
-                                  onPressed: () async {
-                                    FocusScope.of(context).unfocus();
-                                    if (searchController.text.isEmpty) {
-                                      CherryToast.error(
-                                        title: Text(
-                                          "search field cannot be empty",
-                                        ),
-                                      ).show(context);
-                                    }
-                                    if (int.tryParse(
-                                          searchController.text.toString(),
-                                        )! >
-                                        10) {
-                                      CherryToast.error(
-                                        title: Text(
-                                          "Radius range should be within 10KM",
-                                        ),
-                                      ).show(context);
-                                    }
-                                    await getAllBusinessForIncreasedRadius(
-                                      searchController.text,
-                                    );
-                                  },
-                                  icon: Icon(Icons.refresh, size: 16),
-                                  label: Text("Fetch"),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: Color(0xFF1A1A2E),
-                                    side: BorderSide(color: Color(0xFFE8E1D8)),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
+
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  borderSide: BorderSide(
+                                    color: Colors.grey.shade200,
                                   ),
                                 ),
-                              ],
+
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  borderSide: BorderSide(
+                                    color: primaryGreen,
+                                    width: 1.2,
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 10),
+
+                            SizedBox(
+                              width: double.infinity,
+                              height: 46,
+                              child: OutlinedButton.icon(
+                                onPressed: () async {
+                                  FocusScope.of(context).unfocus();
+
+                                  if (searchController.text.isEmpty) {
+                                    CherryToast.error(
+                                      title: const Text(
+                                        "search field cannot be empty",
+                                      ),
+                                    ).show(context);
+                                  }
+
+                                  if (int.tryParse(
+                                        searchController.text.toString(),
+                                      )! >
+                                      10) {
+                                    CherryToast.error(
+                                      title: const Text(
+                                        "Radius range should be within 10KM",
+                                      ),
+                                    ).show(context);
+                                  }
+
+                                  await getAllBusinessForIncreasedRadius(
+                                    searchController.text,
+                                  );
+                                },
+
+                                icon: const Icon(
+                                  Icons.refresh_rounded,
+                                  size: 18,
+                                ),
+
+                                label: const Text(
+                                  "Fetch Businesses",
+                                  style: TextStyle(fontWeight: FontWeight.w600),
+                                ),
+
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: primaryGreen,
+
+                                  side: BorderSide(
+                                    color: primaryGreen.withOpacity(0.35),
+                                  ),
+
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -331,10 +489,14 @@ class _BusinesscategoryscreenState extends State<Businesscategoryscreen> {
                   else
                     ListView.builder(
                       itemCount: filteredBusiness.length,
+
                       shrinkWrap: true,
-                      physics: NeverScrollableScrollPhysics(),
+
+                      physics: const NeverScrollableScrollPhysics(),
+
                       itemBuilder: (context, index) {
                         final data = filteredBusiness[index];
+
                         final avatarInitials = data["BusinessName"]
                             .toString()
                             .split(" ")
@@ -343,149 +505,217 @@ class _BusinesscategoryscreenState extends State<Businesscategoryscreen> {
                             .toUpperCase();
 
                         return Padding(
-                          padding: const EdgeInsets.only(top: 10),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
+                          padding: const EdgeInsets.only(bottom: 12),
+
+                          child: Material(
+                            color: Colors.white,
+
+                            borderRadius: BorderRadius.circular(16),
+
+                            child: InkWell(
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: const Color(0xFFE8E1D8),
+
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => Queuescreen(
+                                    bid: data["_id"],
+                                    bname: data["BusinessName"],
+                                    baddress: data["BusinessAddress"],
+                                  ),
+                                ),
                               ),
-                            ),
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Container(
-                                      width: 48,
-                                      height: 48,
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFFFF3E0),
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(
-                                          color: const Color(0xFFF5C97A),
-                                        ),
-                                      ),
-                                      alignment: Alignment.center,
-                                      child: Text(
-                                        avatarInitials,
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w700,
-                                          color: Color(0xFFC9A96E),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            data["BusinessName"],
-                                            style: TextStyle(
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.w600,
-                                              color: Color(0xFF1A1A2E),
-                                            ),
-                                          ),
-                                          const SizedBox(height: 3),
-                                          Row(
-                                            children: [
-                                              Icon(
-                                                Icons.location_pin,
-                                                size: 13,
-                                                color: Color(0xFF8A7E72),
-                                              ),
-                                              SizedBox(width: 3),
-                                              Expanded(
-                                                child: Text(
-                                                  data["BusinessAddress"],
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                  style: TextStyle(
-                                                    fontSize: 12,
-                                                    color: Color(0xFF8A7E72),
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
+
+                              child: Container(
+                                padding: const EdgeInsets.all(15),
+
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(16),
+
+                                  border: Border.all(
+                                    color: Colors.grey.shade200,
+                                  ),
                                 ),
-                                const SizedBox(height: 14),
-                                const Divider(
-                                  color: Color(0xFFE8E1D8),
-                                  height: 1,
-                                ),
-                                const SizedBox(height: 12),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+
                                   children: [
                                     Row(
                                       children: [
-                                        Icon(
-                                          Icons.social_distance_sharp,
-                                          size: 16,
-                                          color: Color(0xFF8A7E72),
+                                        Container(
+                                          width: 52,
+                                          height: 52,
+
+                                          decoration: BoxDecoration(
+                                            color: lightGreen,
+                                            borderRadius: BorderRadius.circular(
+                                              14,
+                                            ),
+                                          ),
+
+                                          alignment: Alignment.center,
+
+                                          child: Text(
+                                            avatarInitials,
+                                            style: TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w700,
+                                              color: primaryGreen,
+                                            ),
+                                          ),
                                         ),
-                                        SizedBox(width: 6),
-                                        Text(
-                                          "${double.parse(data["distance"].toString()).toStringAsFixed(2)} m",
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            color: Color(0xFF8A7E72),
+
+                                        const SizedBox(width: 13),
+
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+
+                                            children: [
+                                              Text(
+                                                data["BusinessName"],
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: darkText,
+                                                ),
+                                              ),
+
+                                              const SizedBox(height: 5),
+
+                                              Row(
+                                                children: [
+                                                  Icon(
+                                                    Icons.location_on_outlined,
+                                                    size: 14,
+                                                    color: secondaryText,
+                                                  ),
+
+                                                  const SizedBox(width: 4),
+
+                                                  Expanded(
+                                                    child: Text(
+                                                      data["BusinessAddress"],
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      style: TextStyle(
+                                                        fontSize: 12,
+                                                        color: secondaryText,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
                                           ),
                                         ),
                                       ],
                                     ),
-                                    ElevatedButton(
-                                      onPressed: () => Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => Queuescreen(
-                                            bid: data["_id"],
-                                            bname: data["BusinessName"],
-                                            baddress: data["BusinessAddress"],
+
+                                    const SizedBox(height: 14),
+
+                                    Divider(
+                                      height: 1,
+                                      color: Colors.grey.shade200,
+                                    ),
+
+                                    const SizedBox(height: 12),
+
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Container(
+                                              height: 30,
+                                              width: 30,
+                                              decoration: BoxDecoration(
+                                                color: Colors.grey.shade50,
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+
+                                              child: Icon(
+                                                Icons.near_me_outlined,
+                                                size: 16,
+                                                color: secondaryText,
+                                              ),
+                                            ),
+
+                                            const SizedBox(width: 7),
+
+                                            Text(
+                                              "${double.parse(data["distance"].toString()).toStringAsFixed(2)} m",
+
+                                              style: TextStyle(
+                                                fontSize: 12.5,
+                                                color: secondaryText,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+
+                                        SizedBox(
+                                          height: 40,
+
+                                          child: ElevatedButton.icon(
+                                            onPressed: () => Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => Queuescreen(
+                                                  bid: data["_id"],
+                                                  bname: data["BusinessName"],
+                                                  baddress:
+                                                      data["BusinessAddress"],
+                                                ),
+                                              ),
+                                            ),
+
+                                            icon: const Icon(
+                                              Icons.arrow_forward_rounded,
+                                              size: 16,
+                                            ),
+
+                                            label: const Text(
+                                              "Open",
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: primaryGreen,
+
+                                              foregroundColor: Colors.white,
+
+                                              elevation: 0,
+
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 16,
+                                                  ),
+
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                              ),
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(
-                                          0xFF1A1A2E,
-                                        ),
-                                        foregroundColor: const Color(
-                                          0xFFF5F0EB,
-                                        ),
-                                        elevation: 0,
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 18,
-                                          vertical: 9,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                        ),
-                                      ),
-                                      child: const Text(
-                                        "Open",
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
+                                      ],
                                     ),
                                   ],
                                 ),
-                              ],
+                              ),
                             ),
                           ),
                         );

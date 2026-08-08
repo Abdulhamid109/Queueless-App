@@ -135,55 +135,64 @@ class _OTPScreenState extends State<OTPScreen> {
   @override
   Widget build(BuildContext context) {
     double height = MediaQuery.of(context).size.height * 1;
-    return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(28.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // SizedBox(height: height*0.02,),
-            Text("Enter Your OTP"),
-            SizedBox(height: height * 0.02),
-            TextFormField(
-              controller: OTP,
-              maxLength: 6,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                hintText: "XXXXXX",
-                focusedBorder: OutlineInputBorder(),
-                enabledBorder: OutlineInputBorder(),
-              ),
-              validator: (v) {
-                if (v == null || v.trim().isEmpty) {
-                  return "Enter your OTP";
-                }
-                return null;
-              },
-            ),
-            SizedBox(height: height * 0.01),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+    return GestureDetector(
+      onTap: ()=>FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        body: Padding(
+          padding: const EdgeInsets.all(28.0),
+          child: SizedBox(
+            width: double.infinity,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // SizedBox(height: height*0.02,),
+                Text("Enter the confirmation code",style: TextStyle(fontSize: 20,fontWeight: FontWeight.bold),),
+                SizedBox(height: height * 0.01),
+                Text("To Confirm the account, enter the 6 Digit confirmation code we sent to ${widget.registeredEmail}."),
+                SizedBox(height: height * 0.02),
+                TextFormField(
+                  controller: OTP,
+                  maxLength: 6,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    hintText: "XXXXXX",
+                    focusedBorder: OutlineInputBorder(),
+                    enabledBorder: OutlineInputBorder(),
                   ),
-                  backgroundColor: Colors.blue,
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) {
+                      return "Enter your OTP";
+                    }
+                    return null;
+                  },
                 ),
-                onPressed: () async {
-                  await OTPValidation();
-                },
-                child: isloading
-                    ? Center(
-                        child: CircularProgressIndicator(color: Colors.white),
-                      )
-                    : Text(
-                        "Confirm OTP",
-                        style: TextStyle(color: Colors.white),
+                SizedBox(height: height * 0.01),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
                       ),
-              ),
+                      backgroundColor: Colors.blue,
+                    ),
+                    onPressed: () async {
+                      await OTPValidation();
+                    },
+                    child: isloading
+                        ? Center(
+                            child: CircularProgressIndicator(color: Colors.white),
+                          )
+                        : Text(
+                            "Confirm OTP",
+                            style: TextStyle(color: Colors.white),
+                          ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
