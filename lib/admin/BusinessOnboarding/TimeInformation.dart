@@ -1,12 +1,15 @@
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:cherry_toast/cherry_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:queueless/Widgets/AdminAppBar.dart';
 import 'package:queueless/Widgets/AdminDrawer.dart';
 import 'package:queueless/admin/AdminHomePage.dart';
-import 'package:queueless/admin/BusinessOnboarding/WorkerInformation.dart';
+// import 'package:queueless/admin/BusinessOnboarding/WorkerInformation.dart';
 import 'package:queueless/constant/env.dart';
 import 'package:queueless/models/WorkerInformationModal.dart';
 import 'package:queueless/models/businessInformationModal.dart';
@@ -31,6 +34,31 @@ class _TimeinformationState extends State<Timeinformation> {
   var serviceInfoBox = Hive.box<Serviceinformationmodal>("ServiceBox");
   String statusString = "";
   bool isloading = false;
+  File ? file;
+  bool isFileSelected = false;
+  String fileName ="";
+
+  Future<File?> getMediaFromUser() async {
+    try{
+      final imagePicker = ImagePicker();
+      final pickedFile = await imagePicker.pickImage(source: ImageSource.gallery);
+      if(pickedFile!=null){
+        setState(() {
+          file = File(pickedFile.path);
+          fileName = pickedFile.name;
+          isFileSelected = true;
+        });
+      return file;
+      }else{
+        CherryToast.error(
+          title: Text("No image is selected!"),
+        ).show(context);
+      }
+    }catch(e){
+      debugPrint("error => $e");
+    }
+  }
+
 
   Future<String> getCurrentUserDetails() async {
     final SharedPreferences pref = await SharedPreferences.getInstance();
@@ -63,26 +91,47 @@ class _TimeinformationState extends State<Timeinformation> {
 
       setState(() => statusString = "Submitting business info...");
 
-      final response = await http.post(
-        Uri.parse("$BaseUrl/admin/addbusinessInfo"),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          "adminid": uid,
-          "BusinessName": businessInfo.businessName,
-          "BusinessAddress": businessInfo.businessAddress,
-          "BusinessCategory": businessInfo.businessCategory,
-          "Country": businessInfo.country,
-          "State": businessInfo.state,
-          "City": businessInfo.city,
-          "pinCode": businessInfo.pinCode,
-          "website": businessInfo.website,
-          "latitude": businessInfo.latitude,
-          "longitude": businessInfo.longitude,
-        }),
-      );
+      // final response = await http.post(
+      //   Uri.parse("$BaseUrl/admin/addbusinessInfo"),
+      //   headers: {'Content-Type': 'application/json'},
+      //   body: jsonEncode({
+      //     "adminid": uid,
+      //     "BusinessName": businessInfo.businessName,
+      //     "BusinessAddress": businessInfo.businessAddress,
+      //     "BusinessCategory": businessInfo.businessCategory,
+      //     "Country": businessInfo.country,
+      //     "State": businessInfo.state,
+      //     "City": businessInfo.city,
+      //     "pinCode": businessInfo.pinCode,
+      //     "website": businessInfo.website,
+      //     "latitude": businessInfo.latitude,
+      //     "longitude": businessInfo.longitude,
+      //     "file":file,
+      //   }),
+      // );
+
+      final request = http.MultipartRequest('POST', Uri.parse("$BaseUrl/admin/addbusinessInfo"));
+      request.files.add(await http.MultipartFile.fromPath('file', file!.path,filename: fileName));
+      request.fields["adminid"]=uid;
+      request.fields["BusinessName"]=businessInfo.businessName;
+      request.fields["BusinessAddress"]=businessInfo.businessAddress;
+      request.fields["BusinessCategory"]=businessInfo.businessCategory;
+      request.fields["Country"]=businessInfo.country;
+      request.fields["State"]=businessInfo.state;
+      request.fields["City"]=businessInfo.city;
+      request.fields["pinCode"]=businessInfo.pinCode;
+      request.fields["website"]=businessInfo.website;
+      request.fields["latitude"]=businessInfo.latitude.toString();
+      request.fields["longitude"]=businessInfo.longitude.toString();
+
+
+      var response = await request.send();
+
+
 
       if (response.statusCode == 200) {
-        final jsonData = jsonDecode(response.body);
+        final respStr = await response.stream.bytesToString(); // read the stream
+        final jsonData = jsonDecode(respStr);
 
         setState(() => statusString = "Business info added successfully");
         final pref = await SharedPreferences.getInstance();
@@ -229,7 +278,7 @@ class _TimeinformationState extends State<Timeinformation> {
   @override
   Widget build(BuildContext context) {
     double height = MediaQuery.of(context).size.height * 1;
-    double width = MediaQuery.of(context).size.width * 1;
+    // double width = MediaQuery.of(context).size.width * 1;
     return Scaffold(
       appBar: Adminappbar(),
       drawer: Admindrawer(),
@@ -391,6 +440,17 @@ class _TimeinformationState extends State<Timeinformation> {
                           ),
                         ),
                       ),
+                      SizedBox(height: height * 0.01),
+                            isFileSelected?
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                Text(fileName),
+                                ElevatedButton(onPressed: ()async=>await getMediaFromUser(), child: Text("Upload Different")),
+                              ],
+                            ):
+                            ElevatedButton(onPressed: ()async=>await getMediaFromUser(), child: Text("Upload Image of the Business")),
+                            
                       SizedBox(height: height * 0.01),
 
                       SizedBox(
