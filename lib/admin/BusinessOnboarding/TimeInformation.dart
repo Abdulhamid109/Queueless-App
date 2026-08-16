@@ -16,6 +16,8 @@ import 'package:queueless/models/businessInformationModal.dart';
 import 'package:queueless/models/serviceInformationModal.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http_parser/http_parser.dart';
+import 'package:mime/mime.dart';
 
 class Timeinformation extends StatefulWidget {
   const Timeinformation({super.key});
@@ -34,31 +36,30 @@ class _TimeinformationState extends State<Timeinformation> {
   var serviceInfoBox = Hive.box<Serviceinformationmodal>("ServiceBox");
   String statusString = "";
   bool isloading = false;
-  File ? file;
+  File? file;
   bool isFileSelected = false;
-  String fileName ="";
+  String fileName = "";
 
   Future<File?> getMediaFromUser() async {
-    try{
+    try {
       final imagePicker = ImagePicker();
-      final pickedFile = await imagePicker.pickImage(source: ImageSource.gallery);
-      if(pickedFile!=null){
+      final pickedFile = await imagePicker.pickImage(
+        source: ImageSource.gallery,
+      );
+      if (pickedFile != null) {
         setState(() {
           file = File(pickedFile.path);
           fileName = pickedFile.name;
           isFileSelected = true;
         });
-      return file;
-      }else{
-        CherryToast.error(
-          title: Text("No image is selected!"),
-        ).show(context);
+        return file;
+      } else {
+        CherryToast.error(title: Text("No image is selected!")).show(context);
       }
-    }catch(e){
+    } catch (e) {
       debugPrint("error => $e");
     }
   }
-
 
   Future<String> getCurrentUserDetails() async {
     final SharedPreferences pref = await SharedPreferences.getInstance();
@@ -70,7 +71,14 @@ class _TimeinformationState extends State<Timeinformation> {
   Future<void> handlebusinessInfo() async {
     setState(() => isloading = true);
     try {
+      if(file!.path.isEmpty){
+        CherryToast.error(
+          title: Text("Kindly upload the business image"),
+        ).show(context);
+        return;
+      }
       final String uid = await getCurrentUserDetails();
+      final mimeType = lookupMimeType(file!.path) ?? 'application/octet-stream';
 
       final businessInfo = businessInfoBox.get("BusinessInfo");
 
@@ -110,27 +118,35 @@ class _TimeinformationState extends State<Timeinformation> {
       //   }),
       // );
 
-      final request = http.MultipartRequest('POST', Uri.parse("$BaseUrl/admin/addbusinessInfo"));
-      request.files.add(await http.MultipartFile.fromPath('file', file!.path,filename: fileName));
-      request.fields["adminid"]=uid;
-      request.fields["BusinessName"]=businessInfo.businessName;
-      request.fields["BusinessAddress"]=businessInfo.businessAddress;
-      request.fields["BusinessCategory"]=businessInfo.businessCategory;
-      request.fields["Country"]=businessInfo.country;
-      request.fields["State"]=businessInfo.state;
-      request.fields["City"]=businessInfo.city;
-      request.fields["pinCode"]=businessInfo.pinCode;
-      request.fields["website"]=businessInfo.website;
-      request.fields["latitude"]=businessInfo.latitude.toString();
-      request.fields["longitude"]=businessInfo.longitude.toString();
-
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse("$BaseUrl/admin/addbusinessInfo"),
+      );
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'file',
+          file!.path,
+          filename: fileName,
+          contentType: MediaType.parse(mimeType),
+        ),
+      );
+      request.fields["adminid"] = uid;
+      request.fields["BusinessName"] = businessInfo.businessName;
+      request.fields["BusinessAddress"] = businessInfo.businessAddress;
+      request.fields["BusinessCategory"] = businessInfo.businessCategory;
+      request.fields["Country"] = businessInfo.country;
+      request.fields["State"] = businessInfo.state;
+      request.fields["City"] = businessInfo.city;
+      request.fields["pinCode"] = businessInfo.pinCode;
+      request.fields["website"] = businessInfo.website;
+      request.fields["latitude"] = businessInfo.latitude.toString();
+      request.fields["longitude"] = businessInfo.longitude.toString();
 
       var response = await request.send();
 
-
-
       if (response.statusCode == 200) {
-        final respStr = await response.stream.bytesToString(); // read the stream
+        final respStr = await response.stream
+            .bytesToString(); // read the stream
         final jsonData = jsonDecode(respStr);
 
         setState(() => statusString = "Business info added successfully");
@@ -254,13 +270,16 @@ class _TimeinformationState extends State<Timeinformation> {
       if (response.statusCode == 200) {
         setState(() => statusString = "All done ✓");
         businessInfoBox.clear();
-      workerInfoBox.clear();
-      serviceInfoBox.clear();
-      StarttimeOfDay = "";
-      EndtimeOfDay = "";
-      totalCustomer.clear();
-      additionalInformation.clear();
-        Navigator.push(context, MaterialPageRoute(builder: (context) => Adminhomepage(),));
+        workerInfoBox.clear();
+        serviceInfoBox.clear();
+        StarttimeOfDay = "";
+        EndtimeOfDay = "";
+        totalCustomer.clear();
+        additionalInformation.clear();
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => Adminhomepage()),
+        );
       }
     } catch (e) {
       setState(() => statusString = "Error adding time info");
@@ -441,16 +460,33 @@ class _TimeinformationState extends State<Timeinformation> {
                         ),
                       ),
                       SizedBox(height: height * 0.01),
-                            isFileSelected?
-                            Row(
+                      isFileSelected
+                          ? Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
                                 Text(fileName),
-                                ElevatedButton(onPressed: ()async=>await getMediaFromUser(), child: Text("Upload Different")),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                  onPressed: () async =>
+                                      await getMediaFromUser(),
+                                  child: Text("Upload Different"),
+                                ),
                               ],
-                            ):
-                            ElevatedButton(onPressed: ()async=>await getMediaFromUser(), child: Text("Upload Image of the Business")),
-                            
+                            )
+                          : ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              onPressed: () async => await getMediaFromUser(),
+                              child: Text("Upload Image of the Business"),
+                            ),
+
                       SizedBox(height: height * 0.01),
 
                       SizedBox(

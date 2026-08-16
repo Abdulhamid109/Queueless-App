@@ -15,11 +15,13 @@ class Queuescreen extends StatefulWidget {
   final String bid;
   final String bname;
   final String baddress;
+  final String bimage;
   const Queuescreen({
     super.key,
     required this.bid,
     required this.bname,
     required this.baddress,
+    required this.bimage,
   });
 
   @override
@@ -378,6 +380,67 @@ class _QueuescreenState extends State<Queuescreen> {
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.4,
                       color: darkText,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      width: double.infinity,
+                      height: 180,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: widget.bimage.isEmpty
+                          ? Container(
+                              color: lightGreen,
+                              child: Icon(
+                                Icons.storefront_outlined,
+                                size: 48,
+                                color: primaryGreen.withOpacity(0.4),
+                              ),
+                            )
+                          : Image.network(
+                              widget.bimage,
+                              fit: BoxFit.cover,
+                              loadingBuilder: (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return Container(
+                                  color: lightGreen,
+                                  child: Center(
+                                    child: SizedBox(
+                                      height: 24,
+                                      width: 24,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: primaryGreen,
+                                        value:
+                                            loadingProgress
+                                                    .expectedTotalBytes !=
+                                                null
+                                            ? loadingProgress
+                                                      .cumulativeBytesLoaded /
+                                                  loadingProgress
+                                                      .expectedTotalBytes!
+                                            : null,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: Colors.grey.shade100,
+                                  child: Icon(
+                                    Icons.broken_image_outlined,
+                                    size: 40,
+                                    color: Colors.grey.shade400,
+                                  ),
+                                );
+                              },
+                            ),
                     ),
                   ),
 

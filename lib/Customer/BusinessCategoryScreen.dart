@@ -522,6 +522,7 @@ class _BusinesscategoryscreenState extends State<Businesscategoryscreen> {
                                     bid: data["_id"],
                                     bname: data["BusinessName"],
                                     baddress: data["BusinessAddress"],
+                                    bimage: data["businessImageLink"] ?? ""
                                   ),
                                 ),
                               ),
@@ -675,6 +676,7 @@ class _BusinesscategoryscreenState extends State<Businesscategoryscreen> {
                                                   bname: data["BusinessName"],
                                                   baddress:
                                                       data["BusinessAddress"],
+                                                      bimage: data["businessImageLink"] ?? ""
                                                 ),
                                               ),
                                             ),

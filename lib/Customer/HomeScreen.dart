@@ -280,8 +280,18 @@ class _HomescreenState extends State<Homescreen> {
               ),
 
               dropdownMenuEntries: const [
-                DropdownMenuEntry(value: "HairSaloon", label: "Hair Saloons"),
-                DropdownMenuEntry(value: "Clinics", label: "Clinics"),
+                DropdownMenuEntry(value: "Grooming", label: "Grooming"),
+                DropdownMenuEntry(value: "HealthCare", label: "HealthCare"),
+                DropdownMenuEntry(
+                  value: "Automotive Services Centers",
+                  label: "Automotive Service Centers",
+                ),
+                DropdownMenuEntry(
+                  value: "Government Service Centers",
+                  label: "Government Service Centers",
+                ),
+                DropdownMenuEntry(value: "Restaurants", label: "Restaurants"),
+                DropdownMenuEntry(value: "Banks", label: "Banks"),
               ],
 
               onSelected: (value) {
@@ -304,7 +314,7 @@ class _HomescreenState extends State<Homescreen> {
             SizedBox(height: height * 0.035),
 
             Text(
-              "BUSINESS CATEGORIES",
+              "SOME OF THE BUSINESS CATEGORIES",
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
@@ -317,14 +327,14 @@ class _HomescreenState extends State<Homescreen> {
 
             _businessCategoryCard(
               icon: Icons.content_cut_rounded,
-              title: "Hair Saloons",
-              subtitle: "Find all hair saloons near you",
+              title: "Grooming",
+              subtitle: "Find all hair saloons, beauty parlours near you",
               onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) =>
-                        Businesscategoryscreen(bCategory: "HairSaloon"),
+                        Businesscategoryscreen(bCategory: "Grooming"),
                   ),
                 );
               },
@@ -334,17 +344,43 @@ class _HomescreenState extends State<Homescreen> {
 
             _businessCategoryCard(
               icon: Icons.medical_services_outlined,
-              title: "Clinics",
-              subtitle: "Find all clinics near you",
+              title: "HealthCare",
+              subtitle: "Find all clinics, hospitals near you",
               onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) =>
-                        Businesscategoryscreen(bCategory: "Clinics"),
+                        Businesscategoryscreen(bCategory: "HealthCare"),
                   ),
                 );
               },
+            ),
+            const SizedBox(height: 14),
+            _businessCategoryCard(
+              icon: Icons.medical_services_outlined,
+              title: "AutoMobile Service Centers",
+              subtitle: "Find all Automotive service centers near you",
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => Businesscategoryscreen(
+                      bCategory: "Automotive Services Centers",
+                    ),
+                  ),
+                );
+              },
+            ),
+
+            const SizedBox(height: 14),
+
+            Center(
+              child: Text(
+                "Can't find the business you're looking for? We're continuously expanding to bring more businesses to Queueless.",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize:15),
+              ),
             ),
           ],
         ),

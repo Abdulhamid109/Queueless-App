@@ -317,12 +317,28 @@ class _BusinessinformationState extends State<Businessinformation> {
                                 hintText: "Select Your Business Type",
                                 dropdownMenuEntries: [
                                   DropdownMenuEntry(
-                                    value: "HairSaloon",
-                                    label: "HairSaloon",
+                                    value: "Grooming",
+                                    label: "Grooming",
                                   ),
                                   DropdownMenuEntry(
-                                    value: "Clinics",
-                                    label: "Clinics",
+                                    value: "HealthCare",
+                                    label: "HealthCare",
+                                  ),
+                                  DropdownMenuEntry(
+                                    value: "Automotive Services Centers",
+                                    label: "Automotive Service Centers",
+                                  ),
+                                  DropdownMenuEntry(
+                                    value: "Government Service Centers",
+                                    label: "Government Service Centers",
+                                  ),
+                                  DropdownMenuEntry(
+                                    value: "Restaurants",
+                                    label: "Restaurants",
+                                  ),
+                                  DropdownMenuEntry(
+                                    value: "Banks",
+                                    label: "Banks",
                                   ),
                                 ],
                                 onSelected: (value) {

@@ -167,7 +167,26 @@ class _CustomerdrawerState extends State<Customerdrawer> {
                     height: 48,
                     child: OutlinedButton.icon(
                       onPressed: () {
-                        onhandleLogout(context, LoginScreen());
+                        showDialog(
+                          barrierDismissible: false,
+                          barrierColor: Colors.black38,
+                          context: context, builder: (context) {
+                          return AlertDialog(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            title: Center(child: Text("Are You sure you want to Logout?",style: TextStyle(fontSize: 17),textAlign: TextAlign.center,)),
+                            actions: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                children: <Widget>[
+                                  TextButton(onPressed: ()async{
+                                    await onhandleLogout(context, LoginScreen());
+                                  }, child: Text("Logout")),
+                                  TextButton(onPressed: ()=>Navigator.pop(context), child: Text("Cancel"))
+                                ],
+                              )
+                            ],
+                          );
+                        },);
                       },
                       icon: const Icon(Icons.logout_rounded, size: 19),
                       label: const Text(

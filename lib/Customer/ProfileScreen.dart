@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cherry_toast/cherry_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -8,7 +9,9 @@ import 'package:queueless/Customer/LoginScreen.dart';
 import 'package:queueless/Widgets/CustomerAppbar.dart';
 import 'package:queueless/Widgets/CustomerDrawer.dart';
 import 'package:http/http.dart' as http;
+import 'package:queueless/Widgets/flutter_mapp.dart';
 import 'package:queueless/constant/env.dart';
+import 'package:queueless/helper/getLatLlongfromAddress.dart';
 import 'package:queueless/helper/handleLogoutFunctionality.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -22,6 +25,35 @@ class Profilescreen extends StatefulWidget {
 class _ProfilescreenState extends State<Profilescreen> {
   bool isloading = false;
   Future<Map<String, dynamic>>? _profileDataFuture;
+  TextEditingController nameController = TextEditingController();
+  TextEditingController phoneController = TextEditingController();
+  TextEditingController addressController = TextEditingController();
+  // TextEditingController nameController = TextEditingController();
+  TextEditingController emailController = TextEditingController();
+  TextEditingController passwordController = TextEditingController();
+  TextEditingController searchAddressController = TextEditingController();
+
+  static const Color navy = Color(0xFF1A1A2E);
+  static const Color cream = Color(0xFFF5F0EB);
+  static const Color gold = Color(0xFFC9A96E);
+  static const Color fieldBg = Color(0xFFFFFFFF);
+  static const Color border = Color(0xFFE8E1D8);
+  static const Color mutedText = Color(0xFF8A7E72);
+
+  double latitude = 0;
+  double longitude = 0;
+  String currentAddress = "";
+  String UpdatedAddress = "";
+  // Add these alongside your other controllers/state
+  String _originalName = "";
+  String _originalPhone = "";
+  String _originalAddress = "";
+  bool isProfileUpdateloader = false;
+
+  bool get _hasUnsavedChanges =>
+      nameController.text != _originalName ||
+      phoneController.text != _originalPhone ||
+      currentAddress != _originalAddress && currentAddress.isNotEmpty;
 
   Future<Map<String, dynamic>> getProfile() async {
     setState(() {
@@ -40,6 +72,13 @@ class _ProfilescreenState extends State<Profilescreen> {
       if (response.statusCode == 200) {
         final responsebody = jsonDecode(response.body);
         print("Body => $responsebody");
+        List LocationData =
+            responsebody["Data"]["CustomerCurrentLocation"]["coordinates"];
+        debugPrint("${LocationData[1]} lati");
+        setState(() {
+          longitude = LocationData[0];
+          latitude = LocationData[1];
+        });
         return responsebody;
       }
       throw Exception("Failed to fetch profile data");
@@ -121,6 +160,98 @@ class _ProfilescreenState extends State<Profilescreen> {
     );
   }
 
+  InputDecoration _fieldDecoration(
+    String label,
+    IconData prefix, {
+    IconData? suffix,
+    VoidCallback? onSuffixTap,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: const TextStyle(
+        color: mutedText,
+        fontSize: 13,
+        fontWeight: FontWeight.w400,
+      ),
+      floatingLabelStyle: const TextStyle(
+        color: Colors.black,
+        fontSize: 11,
+        letterSpacing: 1.2,
+      ),
+      prefixIcon: Icon(prefix, color: mutedText, size: 20),
+      suffixIcon: suffix != null
+          ? GestureDetector(
+              onTap: onSuffixTap,
+              child: Icon(suffix, color: mutedText, size: 20),
+            )
+          : null,
+      filled: true,
+      fillColor: fieldBg,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: border, width: 1.5),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: gold, width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+      ),
+    );
+  }
+
+  Future<void> _handleUpdateProfile(BuildContext dialogContext) async {
+  try {
+    SharedPreferences pref = await SharedPreferences.getInstance();
+    final token = pref.getString("token");
+    final decodedData = JwtDecoder.decode(token!);
+    final id = decodedData["uid"];
+
+    debugPrint("Name => ${nameController.text}");
+
+    final response = await http.put(
+      Uri.parse("$BaseUrl/customer/updateProfile/$id"),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        "updatedName": nameController.text,
+        "updatedPhone": phoneController.text,
+        "updatedAddress": currentAddress.isEmpty ? _originalAddress : currentAddress,
+        "latitude": latitude,
+        "longitude": longitude,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      // 1. Refetch — this is what actually rebuilds the profile screen with fresh data
+      setState(() {
+        _profileDataFuture = getProfile();
+      });
+
+      // 2. Reset "unsaved changes" tracking so the button greys out again next time
+      _originalName = nameController.text;
+      _originalPhone = phoneController.text;
+      _originalAddress = currentAddress.isEmpty ? _originalAddress : currentAddress;
+
+      // 3. Close the dialog
+      if (dialogContext.mounted) Navigator.pop(dialogContext);
+
+      CherryToast.success(title: Text("Profile updated successfully")).show(context);
+    } else {
+      final err = jsonDecode(response.body);
+      CherryToast.error(title: Text(err["error"] ?? "Update failed")).show(context);
+    }
+  } catch (e) {
+    debugPrint("Update error => $e");
+    CherryToast.error(title: Text("Something went wrong")).show(context);
+  }
+}
   @override
   void initState() {
     super.initState();
@@ -129,14 +260,13 @@ class _ProfilescreenState extends State<Profilescreen> {
 
   @override
   Widget build(BuildContext context) {
-    // final double height = MediaQuery.of(context).size.height;
-
     final Color primaryGreen = const Color(0xFF159447);
     final Color lightGreen = const Color(0xFFEAF7EF);
     final Color darkText = const Color(0xFF171717);
     final Color secondaryText = const Color(0xFF777777);
     final Color background = const Color(0xFFF9FAF9);
 
+    double width = MediaQuery.of(context).size.width;
     return Scaffold(
       backgroundColor: background,
 
@@ -226,7 +356,7 @@ class _ProfilescreenState extends State<Profilescreen> {
                 ),
               );
             } else if (snapshot.hasData) {
-              final data = snapshot.data!["Data"];
+              var data = snapshot.data!["Data"];
 
               final String name = data["name"]?.toString() ?? "";
 
@@ -570,51 +700,410 @@ class _ProfilescreenState extends State<Profilescreen> {
                             context: context,
 
                             builder: (context) {
-                              return AlertDialog(
-                                backgroundColor: Colors.white,
+                              return StatefulBuilder(
+                                builder: (context, setStateDialog) {
+                                  return AlertDialog(
+                                    backgroundColor: Colors.white,
 
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-
-                                title: Row(
-                                  children: [
-                                    Container(
-                                      height: 35,
-                                      width: 35,
-
-                                      decoration: BoxDecoration(
-                                        color: lightGreen,
-                                        borderRadius: BorderRadius.circular(9),
-                                      ),
-
-                                      child: Icon(
-                                        Icons.edit_outlined,
-                                        color: primaryGreen,
-                                        size: 19,
-                                      ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
                                     ),
 
-                                    const SizedBox(width: 10),
+                                    title: Text("Edit Your Profile"),
+                                    content: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        FutureBuilder(
+                                          future: _profileDataFuture,
+                                          builder: (context, snapshot) {
+                                            if (snapshot.hasError) {
+                                              return Text(
+                                                "Something went wrong while editing",
+                                              );
+                                            }
+                                            if (snapshot.connectionState ==
+                                                ConnectionState.waiting) {
+                                              return Center(
+                                                child:
+                                                    CircularProgressIndicator(),
+                                              );
+                                            }
+                                            if (snapshot.hasData) {
+                                              if (nameController.text.isEmpty) {
+                                                nameController.text = snapshot
+                                                    .data!["Data"]["name"]
+                                                    .toString();
+                                                _originalName =
+                                                    nameController.text;
+                                              }
+                                              if (phoneController
+                                                  .text
+                                                  .isEmpty) {
+                                                phoneController.text = snapshot
+                                                    .data!["Data"]["phone"]
+                                                    .toString();
+                                                _originalPhone =
+                                                    phoneController.text;
+                                              }
+                                               _originalAddress = snapshot.data!["Data"]["CustomerAddress"].toString();
+                                              return Column(
+                                                children: [
+                                                  TextField(
+                                                    onChanged: (value) =>
+                                                        setStateDialog(() {}),
+                                                    controller: nameController,
+                                                    decoration: InputDecoration(
+                                                      hintText:
+                                                          nameController
+                                                              .text
+                                                              .isEmpty
+                                                          ? nameController
+                                                                .text = snapshot
+                                                                .data!["Data"]["name"]
+                                                                .toString()
+                                                          : "Full Name",
+                                                      enabledBorder:
+                                                          OutlineInputBorder(),
+                                                      focusedBorder:
+                                                          OutlineInputBorder(),
+                                                    ),
+                                                  ),
+                                                  SizedBox(height: 10),
+                                                  TextFormField(
+                                                    onChanged: (value) =>
+                                                        setStateDialog(() {}),
+                                                    controller: phoneController,
+                                                    decoration: InputDecoration(
+                                                      hintText:
+                                                          nameController
+                                                              .text
+                                                              .isEmpty
+                                                          ? nameController
+                                                                .text = snapshot
+                                                                .data!["Data"]["phone"]
+                                                                .toString()
+                                                          : "Phone no",
+                                                      enabledBorder:
+                                                          OutlineInputBorder(),
+                                                      focusedBorder:
+                                                          OutlineInputBorder(),
+                                                    ),
+                                                  ),
+                                                  SizedBox(height: 10),
+                                                  Container(
+                                                    width: double.maxFinite,
+                                                    decoration: BoxDecoration(
+                                                      border: Border.all(),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            8,
+                                                          ),
+                                                    ),
+                                                    child: Padding(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                            8.0,
+                                                          ),
+                                                      child: Column(
+                                                        children: [
+                                                          Center(
+                                                            child:
+                                                                currentAddress
+                                                                    .isEmpty
+                                                                ? Text(
+                                                                    snapshot
+                                                                        .data!["Data"]["CustomerAddress"]
+                                                                        .toString(),
+                                                                  )
+                                                                : Text(
+                                                                    currentAddress,
+                                                                  ),
+                                                          ),
 
-                                    const Text("Under Development"),
-                                  ],
-                                ),
+                                                          SizedBox(height: 10),
+                                                          Divider(),
+                                                          ElevatedButton(
+                                                            style: ElevatedButton.styleFrom(
+                                                              shape: RoundedRectangleBorder(
+                                                                borderRadius:
+                                                                    BorderRadius.circular(
+                                                                      10,
+                                                                    ),
+                                                              ),
+                                                              backgroundColor:
+                                                                  Colors
+                                                                      .lightBlueAccent,
+                                                            ),
+                                                            onPressed: () {
+                                                              showDialog(
+                                                                barrierDismissible:
+                                                                    false,
+                                                                barrierColor:
+                                                                    const Color.fromARGB(
+                                                                      190,
+                                                                      0,
+                                                                      0,
+                                                                      0,
+                                                                    ),
 
-                                content: const Text(
-                                  "The Edit Profile functionality is of mid to low priority and will be developed in upcoming builds.",
-                                ),
+                                                                context:
+                                                                    context,
+                                                                builder: (context) {
+                                                                  return StatefulBuilder(
+                                                                    builder:
+                                                                        (
+                                                                          context,
+                                                                          setState,
+                                                                        ) {
+                                                                          return AlertDialog(
+                                                                            title: Center(
+                                                                              child: Text(
+                                                                                "Select Your Address from the map",
+                                                                                style: TextStyle(
+                                                                                  fontSize: 16,
+                                                                                ),
+                                                                                textAlign: TextAlign.center,
+                                                                              ),
+                                                                            ),
 
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context),
+                                                                            content: SizedBox(
+                                                                              width:
+                                                                                  width *
+                                                                                  0.8,
 
-                                    child: Text(
-                                      "Close",
-                                      style: TextStyle(color: primaryGreen),
+                                                                              child: Column(
+                                                                                mainAxisSize: MainAxisSize.max,
+                                                                                children: [
+                                                                                  Row(
+                                                                                    children: [
+                                                                                      Expanded(
+                                                                                        child: TextFormField(
+                                                                                          keyboardType: TextInputType.text,
+                                                                                          controller: searchAddressController,
+                                                                                          decoration: _fieldDecoration(
+                                                                                            "location",
+                                                                                            Icons.search,
+                                                                                          ),
+                                                                                        ),
+                                                                                      ),
+
+                                                                                      SizedBox(
+                                                                                        width: 10,
+                                                                                      ),
+
+                                                                                      ElevatedButton(
+                                                                                        style: ElevatedButton.styleFrom(
+                                                                                          backgroundColor: navy,
+
+                                                                                          shape: RoundedRectangleBorder(
+                                                                                            borderRadius: BorderRadius.circular(
+                                                                                              7,
+                                                                                            ),
+                                                                                          ),
+                                                                                        ),
+
+                                                                                        onPressed: () async {
+                                                                                          data = await getLatLongfromAddress(
+                                                                                            searchAddressController.text.toString(),
+                                                                                          );
+                                                                                          setState(
+                                                                                            () {
+                                                                                              latitude =
+                                                                                                  data["lat"]
+                                                                                                      as double;
+                                                                                              longitude =
+                                                                                                  data["long"]
+                                                                                                      as double;
+                                                                                            },
+                                                                                          );
+                                                                                        },
+
+                                                                                        child: Text(
+                                                                                          "Search",
+                                                                                          style: TextStyle(
+                                                                                            color: cream,
+                                                                                          ),
+                                                                                        ),
+                                                                                      ),
+                                                                                    ],
+                                                                                  ),
+
+                                                                                  //here we wiill display our map
+                                                                                  SizedBox(
+                                                                                    height: 10,
+                                                                                  ),
+                                                                                  Expanded(
+                                                                                    child: FlutterMapp(
+                                                                                      latitude: latitude,
+                                                                                      longitude: longitude,
+                                                                                      onAddressChange:
+                                                                                          (
+                                                                                            value,
+                                                                                            lat,
+                                                                                            long,
+                                                                                          ) {
+                                                                                            setState(
+                                                                                              () {
+                                                                                                print(
+                                                                                                  "The Address comming from the Child widget---- $value",
+                                                                                                );
+                                                                                                UpdatedAddress = value;
+                                                                                                latitude = lat;
+                                                                                                longitude = long;
+
+                                                                                                print(
+                                                                                                  "The Address comming from the Child widget---- $UpdatedAddress",
+                                                                                                );
+                                                                                              },
+                                                                                            );
+                                                                                          },
+                                                                                    ),
+                                                                                  ),
+                                                                                ],
+                                                                              ),
+                                                                            ),
+                                                                            actions: [
+                                                                              Row(
+                                                                                mainAxisAlignment: .spaceBetween,
+                                                                                children: [
+                                                                                  UpdatedAddress.isEmpty
+                                                                                      ? Text(
+                                                                                          "",
+                                                                                        )
+                                                                                      : TextButton(
+                                                                                          onPressed: () {
+                                                                                            this.setState(
+                                                                                              () {
+                                                                                                currentAddress = UpdatedAddress;
+                                                                                                latitude = latitude;
+                                                                                                longitude = longitude;
+                                                                                              },
+                                                                                            );
+                                                                                            setStateDialog(
+                                                                                              () {},
+                                                                                            );
+
+                                                                                            Navigator.pop(
+                                                                                              context,
+                                                                                            );
+                                                                                            debugPrint(
+                                                                                              "Data => ${currentAddress} - la -$latitude - lo-$longitude",
+                                                                                            );
+                                                                                          },
+                                                                                          child: Text(
+                                                                                            "Save Address",
+                                                                                          ),
+                                                                                        ),
+                                                                                  TextButton(
+                                                                                    onPressed: () => Navigator.pop(
+                                                                                      context,
+                                                                                    ),
+                                                                                    child: Text(
+                                                                                      "Close Map",
+                                                                                    ),
+                                                                                  ),
+                                                                                ],
+                                                                              ),
+                                                                            ],
+                                                                          );
+                                                                        },
+                                                                  );
+                                                                },
+                                                              );
+                                                            },
+                                                            child: Text(
+                                                              "Change Address",
+                                                              style: TextStyle(
+                                                                color: Colors
+                                                                    .white,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  SizedBox(height: 10),
+                                                  Container(
+                                                    width: double.maxFinite,
+                                                    height: 50,
+                                                    decoration: BoxDecoration(
+                                                      color:
+                                                          Colors.grey.shade400,
+                                                      border: Border.all(),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            8,
+                                                          ),
+                                                    ),
+                                                    child: GestureDetector(
+                                                      onTap: () {
+                                                        CherryToast.error(
+                                                          title: Text(
+                                                            "Email can't be changed!",
+                                                          ),
+                                                        ).show(context);
+                                                      },
+                                                      child: Padding(
+                                                        padding:
+                                                            const EdgeInsets.all(
+                                                              8.0,
+                                                            ),
+                                                        child: Center(
+                                                          child: Text(
+                                                            snapshot
+                                                                .data!["Data"]["email"]
+                                                                .toString(),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              );
+                                            }
+                                            return Text("");
+                                          },
+                                        ),
+                                      ],
                                     ),
-                                  ),
-                                ],
+
+                                    actions: [
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceAround,
+                                        children: [
+                                          TextButton(
+                                            onPressed: _hasUnsavedChanges
+                                                ? () async{
+                                                    await _handleUpdateProfile(context);
+                                                  }
+                                                : null,
+                                            child: Text(
+                                              "Update",
+                                              style: TextStyle(
+                                                color: _hasUnsavedChanges
+                                                    ? primaryGreen
+                                                    : Colors.grey.shade400,
+                                              ),
+                                            ),
+                                          ),
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(context),
+
+                                            child: Text(
+                                              "Close",
+                                              style: TextStyle(
+                                                color: primaryGreen,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  );
+                                },
                               );
                             },
                           );
@@ -656,7 +1145,26 @@ class _ProfilescreenState extends State<Profilescreen> {
 
                       child: ElevatedButton.icon(
                         onPressed: () {
-                          onhandleLogout(context, LoginScreen());
+                          showDialog(
+                          barrierDismissible: false,
+                          barrierColor: Colors.black38,
+                          context: context, builder: (context) {
+                          return AlertDialog(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            title: Center(child: Text("Are You sure you want to Logout?",style: TextStyle(fontSize: 17),textAlign: TextAlign.center,)),
+                            actions: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                children: <Widget>[
+                                  TextButton(onPressed: ()async{
+                                    await onhandleLogout(context, LoginScreen());
+                                  }, child: Text("Logout")),
+                                  TextButton(onPressed: ()=>Navigator.pop(context), child: Text("Cancel"))
+                                ],
+                              )
+                            ],
+                          );
+                        },);
                         },
 
                         icon: const Icon(Icons.logout_rounded, size: 18),
