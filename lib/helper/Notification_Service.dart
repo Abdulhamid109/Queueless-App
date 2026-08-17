@@ -2,57 +2,90 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class NotificationService {
-  FirebaseMessaging messaging = FirebaseMessaging.instance;
-  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  final FirebaseMessaging messaging = FirebaseMessaging.instance;
 
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
 
-  Future<void> initLocalNotifications() async{
-    AndroidInitializationSettings androidInitializationSettings = AndroidInitializationSettings("@mipmap/ic_launcher");
-    InitializationSettings settings = InitializationSettings(android: androidInitializationSettings);
-    flutterLocalNotificationsPlugin.initialize(settings: settings);
+  Future<void> initLocalNotifications({
+    required Function() onNotificationTap,
+  }) async {
+    const AndroidInitializationSettings androidSettings =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+
+    const InitializationSettings settings = InitializationSettings(
+      android: androidSettings,
+    );
+
+    await flutterLocalNotificationsPlugin.initialize(
+      settings:settings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        print("LOCAL NOTIFICATION CLICKED");
+
+        onNotificationTap();
+      },
+    );
+
+    const AndroidNotificationChannel channel = AndroidNotificationChannel(
+      'high_importance_channel',
+      'High Importance Channel',
+      description: 'High importance notifications',
+      importance: Importance.high,
+    );
+
+    await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(channel);
   }
 
-  void requestLNotificationPermission() async{
+
+  Future<void> requestLNotificationPermission() async {
     NotificationSettings settings = await messaging.requestPermission(
       alert: true,
       badge: true,
-      criticalAlert: true,
       sound: true,
     );
 
-    if(settings.authorizationStatus == AuthorizationStatus.authorized){
+    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
       print("Permission granted");
-    }else if(settings.authorizationStatus == AuthorizationStatus.provisional){
+    } else if (settings.authorizationStatus ==
+        AuthorizationStatus.provisional) {
       print("Permission granted provisionally");
-    }else{
+    } else {
       print("Permission denied by user");
     }
   }
 
+  Future<String?> getFCMToken() async {
+    String? token = await messaging.getToken();
 
-  Future<String> getFCMToken() async{
-    String ?token = await messaging.getToken();
-    print("FCM - token :$token");
-    return token!;
+    print("FCM Token: $token");
+
+    return token;
   }
 
-  void showNotification(RemoteMessage message){
-    AndroidNotificationDetails androidNotificationDetails = AndroidNotificationDetails(
+  Future<void> showNotification(RemoteMessage message) async {
+    const AndroidNotificationDetails androidDetails =
+        AndroidNotificationDetails(
       'high_importance_channel',
-       'High Importance Channel',
-       importance: Importance.high,
-       priority: Priority.high
-       );
+      'High Importance Channel',
+      importance: Importance.high,
+      priority: Priority.high,
+    );
 
-       NotificationDetails notificationDetails = NotificationDetails(android: androidNotificationDetails);
+    const NotificationDetails notificationDetails = NotificationDetails(
+      android: androidDetails,
+    );
 
-       flutterLocalNotificationsPlugin.show(
-        id: 0,
-        title: message.notification?.title ?? "no title",
-        body: message.notification?.body ?? "no body",
-        notificationDetails: notificationDetails
-        );
+    await flutterLocalNotificationsPlugin.show(
+      id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      title: message.notification?.title ?? "No title",
+      body: message.notification?.body ?? "No body",
+      notificationDetails: notificationDetails,
 
+      // Data that we can retrieve when notification is clicked
+      payload: 'notification',
+    );
   }
 }
-

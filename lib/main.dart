@@ -58,6 +58,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
    final NotificationService notificationService = NotificationService();
 
   @override
@@ -70,24 +71,49 @@ class _MyAppState extends State<MyApp> {
 
   }
 
-  Future<void> _initNotifications() async {
+Future<void> _initNotifications() async {
+  await notificationService.initLocalNotifications(
+    onNotificationTap: () {
+      navigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (context) => const NotificationScreen(),
+        ),
+      );
+    },
+  );
 
-    await notificationService.initLocalNotifications();
+  await notificationService.requestLNotificationPermission();
 
-    notificationService.requestLNotificationPermission();
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    print("Foreground notification received");
 
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    notificationService.showNotification(message);
+  });
 
-      notificationService.showNotification(message);
+  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+    print("FCM notification clicked");
 
-    });
+    navigatorKey.currentState?.push(
+      MaterialPageRoute(
+        builder: (context) => const NotificationScreen(),
+      ),
+    );
+  });
 
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      Navigator.push(context, MaterialPageRoute(builder: (context) => NotificationScreen(),));
-    });
+   // Terminated
+  RemoteMessage? initialMessage =
+      await FirebaseMessaging.instance.getInitialMessage();
 
+  if (initialMessage != null) {
+    print("App opened from terminated notification");
+
+    navigatorKey.currentState?.push(
+      MaterialPageRoute(
+        builder: (context) => const NotificationScreen(),
+      ),
+    );
   }
-
+}
   @override
   Widget build(BuildContext context) {
     bool isvalidtoken = widget.token != null && !JwtDecoder.isExpired(widget.token!);
@@ -108,6 +134,7 @@ class _MyAppState extends State<MyApp> {
     }
 
     return MaterialApp(
+      navigatorKey: navigatorKey,
       theme: ThemeData(
         scaffoldBackgroundColor: Color.fromRGBO(249, 250, 251, 1),
         useMaterial3: true,

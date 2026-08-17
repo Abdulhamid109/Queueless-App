@@ -110,7 +110,7 @@ class _HomescreenState extends State<Homescreen> {
 
     notificationService.requestLNotificationPermission();
     notificationService.getFCMToken();
-    notificationService.initLocalNotifications();
+    // notificationService.initLocalNotifications();
 
     updateFCM();
 

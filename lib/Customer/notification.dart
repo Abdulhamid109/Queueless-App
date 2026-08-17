@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:cherry_toast/cherry_toast.dart';
@@ -20,11 +21,14 @@ class NotificationScreen extends StatefulWidget {
 
 class _NotificationScreenState extends State<NotificationScreen> {
   List allNotifications = [];
+  Timer? _expiryTicker;
 
   final Color primaryGreen = const Color(0xFF159447);
   final Color lightGreen = const Color(0xFFEAF7EF);
   final Color darkText = const Color(0xFF171717);
   final Color secondaryText = const Color(0xFF777777);
+
+  static const Duration _confirmationWindow = Duration(minutes: 15);
 
   Future getFiredNotifications() async {
     try {
@@ -87,8 +91,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
       }
 
       if (response.statusCode != 200) {
+        final body = jsonDecode(response.body);
         CherryToast.error(
-          title: const Text("Something went wrong!"),
+          title: Text(body["error"] ?? "Something went wrong! This confirmation window may have expired."),
         ).show(context);
 
         throw Exception("Error => ${response.statusCode} -- ${response.body}");
@@ -124,8 +129,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
       }
 
       if (response.statusCode != 200) {
+        final body = jsonDecode(response.body);
         CherryToast.error(
-          title: const Text("Something went wrong!"),
+          title: Text(body["error"] ?? "Something went wrong!"),
         ).show(context);
 
         throw Exception("Error => ${response.statusCode} -- ${response.body}");
@@ -224,11 +230,35 @@ class _NotificationScreenState extends State<NotificationScreen> {
     }
   }
 
+  bool _isExpired(dynamic rawDate) {
+    if (rawDate == null) return true;
+
+    try {
+      final createdAt = DateTime.parse(rawDate.toString()).toLocal();
+      final expiryTime = createdAt.add(_confirmationWindow);
+      return DateTime.now().isAfter(expiryTime);
+    } catch (e) {
+      return true;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
 
     getFiredNotifications();
+
+    // Rebuild every 30s so pending notifications flip to "expired"
+    // live, without requiring a manual pull-to-refresh.
+    _expiryTicker = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _expiryTicker?.cancel();
+    super.dispose();
   }
 
   Widget _statusIcon({
@@ -248,6 +278,41 @@ class _NotificationScreenState extends State<NotificationScreen> {
   }
 
   Widget _buildPendingNotification(Map<String, dynamic> notification) {
+    final bool expired = _isExpired(notification["createdAt"]);
+
+    if (expired) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 16),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.timer_off_rounded, size: 18, color: Colors.grey.shade600),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    "This confirmation window has expired.",
+                    style: TextStyle(
+                      color: Colors.grey.shade700,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
