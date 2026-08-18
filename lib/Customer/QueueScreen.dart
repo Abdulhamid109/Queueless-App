@@ -2,26 +2,37 @@ import 'dart:convert';
 
 import 'package:cherry_toast/cherry_toast.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:queueless/Widgets/CustomerAppbar.dart';
 import 'package:queueless/Widgets/CustomerDrawer.dart';
 import 'package:http/http.dart' as http;
+import 'package:queueless/Widgets/flutterMapdistance.dart';
+import 'package:queueless/Widgets/flutter_mapp.dart';
+import 'package:queueless/Widgets/locationn_error.dart';
 import 'package:queueless/constant/env.dart';
+import 'package:queueless/helper/RequestLocationPermission.dart';
+import 'package:queueless/helper/getAddressFromLatLong.dart';
 import 'package:queueless/helper/socketservice.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class Queuescreen extends StatefulWidget {
   final String bid;
   final String bname;
   final String baddress;
   final String bimage;
+  final double blatitude;
+  final double blongitude;
   const Queuescreen({
     super.key,
     required this.bid,
     required this.bname,
     required this.baddress,
     required this.bimage,
+    required this.blatitude,
+    required this.blongitude,
   });
 
   @override
@@ -81,6 +92,59 @@ class _QueuescreenState extends State<Queuescreen> {
   String Postion = "";
 
   bool userJoined = false;
+  double latitude = 0;
+  double longitude = 0;
+  // String currentAddress = "";
+  // String UpdatedAddress = "";
+  bool isloading = false;
+
+  Future<void> getCurrentLocation() async {
+    final PermissionGranted = await requestLocationPermission();
+    if (!PermissionGranted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => LocationnError(
+            screen: Queuescreen(
+              baddress: widget.baddress,
+              bid: widget.bid,
+              bimage: widget.bimage,
+              bname: widget.bname,
+              blatitude: widget.blatitude,
+              blongitude: widget.blongitude,
+            ),
+          ),
+        ),
+      );
+      return;
+    }
+
+    Position position = await Geolocator.getCurrentPosition(
+      locationSettings: LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 0,
+      ),
+    );
+    double lat = position.latitude;
+    double long = position.longitude;
+    // double accuracy = position.accuracy;
+    // double speed = position.speed;
+    // double heading = position.heading;
+
+    print('--------------Lat: $lat, Long: $long -------------------------');
+    // final address = await getAddressFromLatLong(
+    //   position.latitude,
+    //   position.longitude,
+    // );
+
+    setState(() {
+      latitude = position.latitude;
+      longitude = position.longitude;
+      // currentAddress = address;
+    });
+  }
+
+  Future getBusinessCoordinates() async {}
 
   Future getRealtimeQueueUpdates() async {
     try {
@@ -324,6 +388,7 @@ class _QueuescreenState extends State<Queuescreen> {
   @override
   void initState() {
     super.initState();
+    getCurrentLocation();
     TimeDetails = getTimeData();
     socketIO.init(serverUrl: BaseUrl);
     _joinBusinessRoom();
@@ -447,37 +512,267 @@ class _QueuescreenState extends State<Queuescreen> {
                   const SizedBox(height: 8),
 
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    // crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      Container(
-                        height: 30,
-                        width: 30,
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Container(
+                              height: 30,
+                              width: 30,
 
-                        decoration: BoxDecoration(
-                          color: lightGreen,
-                          borderRadius: BorderRadius.circular(9),
-                        ),
+                              decoration: BoxDecoration(
+                                color: lightGreen,
+                                borderRadius: BorderRadius.circular(9),
+                              ),
 
-                        child: Icon(
-                          Icons.location_on_outlined,
-                          color: primaryGreen,
-                          size: 18,
+                              child: Icon(
+                                Icons.location_on_outlined,
+                                color: primaryGreen,
+                                size: 18,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                widget.baddress,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  height: 1.4,
+                                  color: secondaryText,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-
                       const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () async {
+                          showDialog(
+                            context: context,
+                            barrierDismissible: true,
+                            builder: (context) {
+                              return Dialog(
+                                backgroundColor: Colors.transparent,
+                                insetPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 24,
+                                ),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(24),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.15),
+                                        blurRadius: 30,
+                                        offset: const Offset(0, 10),
+                                      ),
+                                    ],
+                                  ),
+                                  clipBehavior: Clip.antiAlias,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      // ==================================================
+                                      // HEADER
+                                      // ==================================================
+                                      Padding(
+                                        padding: const EdgeInsets.fromLTRB(
+                                          20,
+                                          18,
+                                          12,
+                                          14,
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Container(
+                                              height: 42,
+                                              width: 42,
+                                              decoration: BoxDecoration(
+                                                color: const Color(
+                                                  0xFF159447,
+                                                ).withOpacity(0.1),
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                              ),
+                                              child: const Icon(
+                                                Icons.location_on_rounded,
+                                                color: Color(0xFF159447),
+                                                size: 22,
+                                              ),
+                                            ),
 
-                      Expanded(
+                                            const SizedBox(width: 12),
+
+                                            const Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    "Business Location",
+                                                    style: TextStyle(
+                                                      fontSize: 17,
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                      color: Color(0xFF171717),
+                                                    ),
+                                                  ),
+                                                  SizedBox(height: 2),
+                                                  Text(
+                                                    "See how far you are",
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      color: Color(0xFF777777),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+
+                                            // Close icon
+                                            IconButton(
+                                              onPressed: () {
+                                                Navigator.pop(context);
+                                              },
+                                              icon: const Icon(
+                                                Icons.close_rounded,
+                                                color: Color(0xFF777777),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+
+                                      // ==================================================
+                                      // MAP
+                                      // ==================================================
+                                      SizedBox(
+                                        height: 330,
+                                        width: double.infinity,
+                                        child: Fluttermapdistance(
+                                          userlatitude: latitude,
+                                          userlongitude: longitude,
+                                          businesslatitude: widget.blatitude,
+                                          businesslongitude: widget.blongitude,
+                                        ),
+                                      ),
+
+                                      // ==================================================
+                                      // BOTTOM ACTIONS
+                                      // ==================================================
+                                      Padding(
+                                        padding: const EdgeInsets.fromLTRB(
+                                          16,
+                                          14,
+                                          16,
+                                          18,
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Expanded(
+                                              child: SizedBox(
+                                                height: 50,
+                                                child: OutlinedButton(
+                                                  onPressed: () {
+                                                    Navigator.pop(context);
+                                                  },
+                                                  style: OutlinedButton.styleFrom(
+                                                    foregroundColor:
+                                                        Colors.red.shade500,
+                                                    side: BorderSide(
+                                                      color:
+                                                          Colors.red.shade200,
+                                                      width: 1.2,
+                                                    ),
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            14,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                  child: const Text(
+                                                    "Close",
+                                                    style: TextStyle(
+                                                      fontSize: 14,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+
+                                            const SizedBox(width: 12),
+
+                                            Expanded(
+                                              flex: 2,
+                                              child: SizedBox(
+                                                height: 50,
+                                                child: ElevatedButton.icon(
+                                                  onPressed: () async {
+                                                    final googleMapsUrl = Uri.parse(
+                                                      'https://www.google.com/maps/dir/?api=1'
+                                                      '&origin=$latitude,$longitude'
+                                                      '&destination=${widget.blatitude},${widget.blongitude}'
+                                                      '&travelmode=driving',
+                                                    );
+                                                    await launchUrl(
+                                                      googleMapsUrl,
+                                                      mode: LaunchMode
+                                                          .externalApplication,
+                                                    );
+                                                  },
+                                                  icon: const Icon(
+                                                    Icons.navigation_rounded,
+                                                    size: 19,
+                                                  ),
+                                                  label: const Text(
+                                                    "Navigate",
+                                                    style: TextStyle(
+                                                      fontSize: 14,
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                    ),
+                                                  ),
+                                                  style: ElevatedButton.styleFrom(
+                                                    backgroundColor:
+                                                        const Color(0xFF159447),
+                                                    foregroundColor:
+                                                        Colors.white,
+                                                    elevation: 0,
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            14,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
                         child: Text(
-                          widget.baddress,
-
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-
+                          "open maps",
                           style: TextStyle(
-                            fontSize: 13,
-                            height: 1.4,
-                            color: secondaryText,
+                            decoration: TextDecoration.underline,
+                            color: Colors.blue.shade900,
                           ),
                         ),
                       ),
@@ -485,7 +780,6 @@ class _QueuescreenState extends State<Queuescreen> {
                   ),
 
                   const SizedBox(height: 22),
-
                   Text(
                     "Business Details",
 
