@@ -105,6 +105,7 @@ class _BusinesscategoryscreenState extends State<Businesscategoryscreen> {
         setState(() {
           allbusiness = responseBody["data"];
           filteredBusiness = allbusiness;
+          debugPrint("Filtered business => ${filteredBusiness.length}");
         });
       }
 
@@ -499,7 +500,9 @@ class _BusinesscategoryscreenState extends State<Businesscategoryscreen> {
 
                         final avatarInitials = data["BusinessName"]
                             .toString()
+                            .trim()
                             .split(" ")
+                            .where((n)=>n.isNotEmpty)
                             .map((n) => n[0])
                             .join("")
                             .toUpperCase();
@@ -560,7 +563,7 @@ class _BusinesscategoryscreenState extends State<Businesscategoryscreen> {
                                           alignment: Alignment.center,
 
                                           child: Text(
-                                            avatarInitials,
+                                            avatarInitials.isEmpty?"":avatarInitials,
                                             style: TextStyle(
                                               fontSize: 15,
                                               fontWeight: FontWeight.w700,
