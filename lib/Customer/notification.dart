@@ -159,7 +159,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
     Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.high,
-        distanceFilter: 20,
+        distanceFilter: 2,
       ),
     ).listen((Position position) {
       sendlingLocationToBackend(position.latitude, position.longitude);
