@@ -9,11 +9,11 @@ import 'package:queueless/Widgets/CustomerAppbar.dart';
 import 'package:queueless/Widgets/CustomerDrawer.dart';
 import 'package:http/http.dart' as http;
 import 'package:queueless/Widgets/flutterMapdistance.dart';
-import 'package:queueless/Widgets/flutter_mapp.dart';
+// import 'package:queueless/Widgets/flutter_mapp.dart';
 import 'package:queueless/Widgets/locationn_error.dart';
 import 'package:queueless/constant/env.dart';
 import 'package:queueless/helper/RequestLocationPermission.dart';
-import 'package:queueless/helper/getAddressFromLatLong.dart';
+// import 'package:queueless/helper/getAddressFromLatLong.dart';
 import 'package:queueless/helper/socketservice.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -650,9 +650,7 @@ class _QueuescreenState extends State<Queuescreen> {
                                         ),
                                       ),
 
-                                      // ==================================================
-                                      // MAP
-                                      // ==================================================
+                                      
                                       SizedBox(
                                         height: 330,
                                         width: double.infinity,
@@ -664,9 +662,7 @@ class _QueuescreenState extends State<Queuescreen> {
                                         ),
                                       ),
 
-                                      // ==================================================
-                                      // BOTTOM ACTIONS
-                                      // ==================================================
+                                      
                                       Padding(
                                         padding: const EdgeInsets.fromLTRB(
                                           16,
@@ -986,8 +982,9 @@ class _QueuescreenState extends State<Queuescreen> {
                             title: const Text("Refreshing Queue"),
                           ).show(context);
 
-                          setState(() {
                             getRealtimeQueueUpdates();
+                          setState(() {
+                            getAllWorkers();
                           });
                         },
 
@@ -1402,6 +1399,7 @@ class _QueuescreenState extends State<Queuescreen> {
                             ? null
                             : () async {
                                 await exitQueue();
+                                await getAllWorkers();
                               },
 
                         icon: _isExiting
@@ -1737,6 +1735,7 @@ class _QueuescreenState extends State<Queuescreen> {
                                                   );
                                                 } else {
                                                   await joinQueue();
+                                                  await getAllWorkers();
                                                 }
                                               },
 
