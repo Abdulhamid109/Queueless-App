@@ -1,16 +1,18 @@
 import 'package:geolocator/geolocator.dart';
 
 Future<bool> requestLocationPermission() async {
-
-  bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  // 1. Check whether device location is enabled
+  final serviceEnabled = await Geolocator.isLocationServiceEnabled();
 
   if (!serviceEnabled) {
     await Geolocator.openLocationSettings();
     return false;
   }
 
-  LocationPermission permission =
-      await Geolocator.checkPermission();
+  // 2. Check current permission
+  LocationPermission permission = await Geolocator.checkPermission();
+
+  // 3. Request permission if denied
   if (permission == LocationPermission.denied) {
     permission = await Geolocator.requestPermission();
 
@@ -19,10 +21,20 @@ Future<bool> requestLocationPermission() async {
     }
   }
 
+  // 4. Permanently denied
   if (permission == LocationPermission.deniedForever) {
     await Geolocator.openAppSettings();
     return false;
   }
 
-  return true;
+  // 5. For your use case, background permission is important
+  if (permission == LocationPermission.whileInUse) {
+    permission = await Geolocator.requestPermission();
+
+    if (permission != LocationPermission.always) {
+      return false;
+    }
+  }
+
+  return permission == LocationPermission.always;
 }

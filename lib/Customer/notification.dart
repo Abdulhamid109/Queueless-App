@@ -7,11 +7,96 @@ import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
-import 'package:queueless/Widgets/locationn_error.dart';
 import 'package:queueless/constant/env.dart';
 import 'package:queueless/helper/RequestLocationPermission.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+// ============================================================================
+// LocationTrackingService
+//
+// Owns the location StreamSubscription independently of any widget's
+// lifecycle. Previously this subscription lived inside
+// _NotificationScreenState and was cancelled in that State's dispose(),
+// which meant navigating away from NotificationScreen (e.g. to the home
+// screen) silently killed tracking. This singleton is not tied to any
+// widget, so it keeps running across navigation until stop() is called
+// explicitly.
+// ============================================================================
+class LocationTrackingService {
+  LocationTrackingService._();
+  static final LocationTrackingService instance = LocationTrackingService._();
+
+  StreamSubscription<Position>? _subscription;
+
+  bool get isTracking => _subscription != null;
+
+  /// Returns true if tracking started successfully, false if location
+  /// permission was denied.
+  Future<bool> start() async {
+    final isLocationEnabled = await requestLocationPermission();
+    if (!isLocationEnabled) return false;
+
+    // Cancel any previous stream before starting a new one, in case
+    // start() is called again while already tracking.
+    await _subscription?.cancel();
+
+    final locationSettings = AndroidSettings(
+      accuracy: LocationAccuracy.high,
+      distanceFilter: 2,
+      intervalDuration: const Duration(seconds: 5),
+      foregroundNotificationConfig: const ForegroundNotificationConfig(
+        notificationTitle: "Queueless",
+        notificationText: "Tracking your location while you're on your way.",
+        enableWakeLock: true,
+        setOngoing: true,
+      ),
+    );
+
+    _subscription = Geolocator.getPositionStream(
+      locationSettings: locationSettings,
+    ).listen((Position position) {
+      debugPrint(
+        "LiveLatitude ${position.latitude} - LiveLongitude ${position.longitude}",
+      );
+      _sendLocationToBackend(position.latitude, position.longitude);
+    });
+
+    return true;
+  }
+
+  /// Call this once the customer's slot is resolved (arrived, expired,
+  /// or marked "not coming") — nothing calls this automatically.
+  Future<void> stop() async {
+    await _subscription?.cancel();
+    _subscription = null;
+  }
+
+  Future<void> _sendLocationToBackend(double latitude, double longitude) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString("token");
+      final decodedData = JwtDecoder.decode(token!);
+      final uid = decodedData["uid"];
+
+      await http.post(
+        Uri.parse("$BaseUrl/customer/getLiveLocation/$uid"),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({"latitude": latitude, "longitude": longitude}),
+      );
+      // Note: the original MaterialBanner UI feedback lived here, but a
+      // singleton service must not hold a BuildContext/ScaffoldMessenger
+      // (it can go stale or crash once the originating screen is gone).
+      // That feedback is now a one-shot toast fired at the call site in
+      // the "Coming" button's onPressed below, right after start() succeeds.
+    } catch (e) {
+      print("Error occured while updating the live locations => $e");
+    }
+  }
+}
+
+// ============================================================================
+// NotificationScreen
+// ============================================================================
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
 
@@ -141,83 +226,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
     }
   }
 
-  Future locationStreaming() async {
-    final isLocationEnabled = await requestLocationPermission();
-
-    if (!isLocationEnabled) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) =>
-              LocationnError(screen: const NotificationScreen()),
-        ),
-      );
-
-      return;
-    }
-
-    Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 2,
-      ),
-    ).listen((Position position) {
-      sendlingLocationToBackend(position.latitude, position.longitude);
-    });
-  }
-
-  Future sendlingLocationToBackend(double latitude, double longitude) async {
-    try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-
-      final token = prefs.getString("token");
-
-      final decodedData = JwtDecoder.decode(token!);
-
-      final uid = decodedData["uid"];
-
-      final response = await http.post(
-        Uri.parse("$BaseUrl/customer/getLiveLocation/$uid"),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({"latitude": latitude, "longitude": longitude}),
-      );
-
-      if (response.statusCode == 200 && mounted) {
-        final messenger = ScaffoldMessenger.of(context);
-
-        messenger.showMaterialBanner(
-          MaterialBanner(
-            backgroundColor: lightGreen,
-            content: const Text(
-              "Location tracking started, reach within the time limits",
-            ),
-            actions: [
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  backgroundColor: Colors.black87,
-                ),
-                onPressed: () => messenger.hideCurrentMaterialBanner(),
-                child: const Text(
-                  "Close",
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-            ],
-          ),
-        );
-
-        Future.delayed(const Duration(seconds: 5), () {
-          messenger.hideCurrentMaterialBanner();
-        });
-      }
-    } catch (e) {
-      print("Error occured while updating the live locations => $e");
-    }
-  }
-
   String _formatCreatedAt(dynamic rawDate) {
     if (rawDate == null) return "";
 
@@ -258,6 +266,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
   @override
   void dispose() {
     _expiryTicker?.cancel();
+    // Location tracking is no longer owned by this screen (see
+    // LocationTrackingService above), so disposing this State must NOT
+    // cancel it — that was the original bug. Nothing to cancel here now.
     super.dispose();
   }
 
@@ -343,7 +354,32 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 height: 43,
                 child: ElevatedButton.icon(
                   onPressed: () async {
-                    await locationStreaming();
+                    // CHANGED: delegates to the singleton service instead of
+                    // a local method, so tracking survives navigation away
+                    // from this screen.
+                    final started = await LocationTrackingService.instance.start();
+
+                    if (!started) {
+                      if (!mounted) return;
+                      CherryToast.error(
+                        title: const Text(
+                          "Location permission is required to track your arrival.",
+                        ),
+                      ).show(context);
+                      return;
+                    }
+
+                    // One-shot confirmation toast — replaces the old
+                    // MaterialBanner, which depended on a context the
+                    // service can no longer safely hold.
+                    if (mounted) {
+                      CherryToast.info(
+                        title: const Text(
+                          "Location tracking started, reach within the time limit.",
+                        ),
+                      ).show(context);
+                    }
+
                     await updateAckStatus(notification["_id"]);
                   },
                   icon: const Icon(Icons.check_rounded, size: 17),
