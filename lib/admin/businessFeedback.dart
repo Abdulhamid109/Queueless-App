@@ -76,7 +76,7 @@ class _BusinessFeedbackState extends State<BusinessFeedback> {
               Center(child: Text("No Feedbacks Found!"),)
               :Expanded(
                 child: ListView.builder(
-                  itemCount: 15,
+                  itemCount: feedbacks.length,
                   itemBuilder: (context, index) {
                     final data = feedbacks[index];
                     return Padding(

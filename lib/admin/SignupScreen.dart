@@ -1,9 +1,10 @@
+
 import 'dart:convert';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:queueless/admin/LoginScreen.dart';
 import 'package:http/http.dart' as http;
+import 'package:queueless/admin/LoginScreen.dart';
 import 'package:queueless/constant/env.dart';
 
 class AdminSignupScreen extends StatefulWidget {
@@ -14,322 +15,600 @@ class AdminSignupScreen extends StatefulWidget {
 }
 
 class _AdminSignupScreenState extends State<AdminSignupScreen> {
-  TextEditingController nameController = TextEditingController();
-  TextEditingController emailController = TextEditingController();
-  TextEditingController passwordController = TextEditingController();
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
 
   bool obscurePassword = true;
   bool isLoading = false;
 
-  static const Color navy = Color(0xFF111827);
-
-  static const Color blue = Color(0xFF2563EB);
-
-  static const Color light = Color(0xFFF8FAFC);
-
+  static const Color green = Color(0xFF16A34A);
+  static const Color dark = Color(0xFF111827);
+  static const Color textGrey = Color(0xFF6B7280);
+  static const Color background = Color(0xFFF7F8FA);
   static const Color border = Color(0xFFE5E7EB);
 
-  static const Color textGrey = Color(0xFF6B7280);
-
-  InputDecoration fieldDecoration(
-    String label,
-    IconData icon, {
-    Widget? suffixIcon,
-  }) {
-    return InputDecoration(
-      labelText: label,
-
-      labelStyle: const TextStyle(color: textGrey, fontSize: 14),
-
-      prefixIcon: Icon(icon, color: textGrey),
-
-      suffixIcon: suffixIcon,
-
-      filled: true,
-      fillColor: Colors.white,
-
-      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-
-        borderSide: const BorderSide(color: border),
-      ),
-
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-
-        borderSide: const BorderSide(color: blue, width: 1.5),
-      ),
-    );
+  @override
+  void dispose() {
+    nameController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
   }
 
-  Future<void> onhandleSignup() async {
+  InputDecoration fieldDecoration(
+  String label,
+  IconData icon, {
+  Widget? suffixIcon,
+}) {
+  return InputDecoration(
+    labelText: label,
+
+    labelStyle: const TextStyle(
+      color: textGrey,
+      fontSize: 14,
+    ),
+
+    prefixIcon: Icon(
+      icon,
+      color: textGrey,
+      size: 20,
+    ),
+
+    suffixIcon: suffixIcon,
+
+    filled: true,
+    fillColor: Colors.white,
+
+    contentPadding: const EdgeInsets.symmetric(
+      horizontal: 18,
+      vertical: 18,
+    ),
+
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(15),
+      borderSide: const BorderSide(
+        color: border,
+      ),
+    ),
+
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(15),
+      borderSide: const BorderSide(
+        color: green,
+        width: 1.5,
+      ),
+    ),
+  );
+}
+  Future<void> handleSignup() async {
+    if (nameController.text.trim().isEmpty ||
+        emailController.text.trim().isEmpty ||
+        passwordController.text.isEmpty) {
+      showError("Please fill in all fields.");
+      return;
+    }
+
+    final emailRegex = RegExp(
+      r'^[a-zA-Z0-9.!#$%&*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$',
+    );
+
+    if (!emailRegex.hasMatch(emailController.text.trim())) {
+      showError("Please enter a valid email address.");
+      return;
+    }
+
+    final password = passwordController.text;
+
+    if (password.length < 8) {
+      showError("Password must be at least 8 characters.");
+      return;
+    }
+
+    if (!RegExp(r'[A-Z]').hasMatch(password)) {
+      showError("Password must contain an uppercase letter.");
+      return;
+    }
+
+    if (!RegExp(r'[a-z]').hasMatch(password)) {
+      showError("Password must contain a lowercase letter.");
+      return;
+    }
+
+    if (!RegExp(r'[0-9]').hasMatch(password)) {
+      showError("Password must contain a number.");
+      return;
+    }
+
+    if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password)) {
+      showError("Password must contain a special character.");
+      return;
+    }
+
     setState(() {
       isLoading = true;
     });
+
     try {
       final response = await http.post(
         Uri.parse("$BaseUrl/admin/auth/signup"),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: jsonEncode({
-          'name': nameController.text.toString(),
-          'email': emailController.text.toString().toLowerCase(),
-          'password': passwordController.text.toString(),
+          'name': nameController.text.trim(),
+          'email': emailController.text.trim().toLowerCase(),
+          'password': passwordController.text,
         }),
       );
 
       if (response.statusCode == 200) {
+        if (!mounted) return;
+
         ScaffoldMessenger.of(context)
             .showSnackBar(
-              SnackBar(
+              const SnackBar(
                 content: Text(
-                  "Successfully account created...redirecting to Loginscreen",
+                  "Account created successfully.",
                 ),
                 duration: Duration(seconds: 1),
               ),
             )
             .closed
-            .then(
-              (v) => Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => AdminLoginScreen()),
-              ),
-            );
+            .then((value) {
+          if (!mounted) return;
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AdminLoginScreen(),
+            ),
+          );
+        });
+      } else {
+        String errorMessage = "Something went wrong.";
+
+        try {
+          final decoded = jsonDecode(response.body);
+
+          errorMessage =
+              decoded["error"] ??
+              decoded["message"] ??
+              "Unable to create account.";
+        } catch (_) {}
+
+        if (mounted) {
+          showError(errorMessage);
+        }
       }
     } catch (e) {
-      print("Error => $e");
+      debugPrint("Signup Error => $e");
+
+      if (mounted) {
+        showError("Unable to connect to the server.");
+      }
     } finally {
-      setState(() {
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
+  }
+
+  void showError(String message) {
+    if (!mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+
+    messenger.hideCurrentMaterialBanner();
+
+    messenger.showMaterialBanner(
+      MaterialBanner(
+        backgroundColor: Colors.red.shade50,
+
+        leading: const Icon(
+          Icons.error_outline_rounded,
+          color: Colors.red,
+        ),
+
+        content: Text(
+          message,
+          style: const TextStyle(
+            fontSize: 13,
+            color: dark,
+          ),
+        ),
+
+        actions: [
+          TextButton(
+            onPressed: () {
+              messenger.hideCurrentMaterialBanner();
+            },
+            child: const Text(
+              "Dismiss",
+              style: TextStyle(
+                color: green,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    Future.delayed(const Duration(seconds: 5), () {
+      if (messenger.mounted) {
+        messenger.hideCurrentMaterialBanner();
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: background,
+
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            physics: const BouncingScrollPhysics(),
 
-            child: Container(
-              padding: const EdgeInsets.all(28),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 22,
+              vertical: 30,
+            ),
 
-              decoration: BoxDecoration(
-                color: light,
-
-                borderRadius: BorderRadius.circular(28),
-
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 20,
-                    offset: Offset(0, 10),
-                  ),
-                ],
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: 460,
               ),
 
               child: Column(
-                mainAxisSize: MainAxisSize.min,
-
-                crossAxisAlignment: CrossAxisAlignment.start,
-
                 children: [
-                  Center(
-                    child: Container(
-                      width: 75,
-                      height: 75,
+                  // ------------------------------------------------
+                  // BRAND
+                  // ------------------------------------------------
 
-                      decoration: BoxDecoration(
-                        color: blue.withOpacity(0.1),
+                  Container(
+                    height: 64,
+                    width: 64,
 
-                        shape: BoxShape.circle,
-                      ),
-
-                      child: const Icon(
-                        Icons.admin_panel_settings,
-                        color: blue,
-                        size: 40,
-                      ),
+                    decoration: BoxDecoration(
+                      color: green.withOpacity(0.10),
+                      borderRadius: BorderRadius.circular(19),
                     ),
-                  ),
 
-                  const SizedBox(height: 25),
-
-                  const Center(
-                    child: Text(
-                      "Admin Signup",
-
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: navy,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  const Center(
-                    child: Text(
-                      "Create Your Business Account",
-
-                      textAlign: TextAlign.center,
-
-                      style: TextStyle(color: textGrey, fontSize: 14),
-                    ),
-                  ),
-
-                  const SizedBox(height: 35),
-                  TextFormField(
-                    controller: nameController,
-                    decoration: fieldDecoration(
-                      "Business Name",
-                      Icons.email_outlined,
+                    child: const Icon(
+                      Icons.auto_awesome_rounded,
+                      color: green,
+                      size: 31,
                     ),
                   ),
 
                   const SizedBox(height: 18),
-                  TextFormField(
-                    controller: emailController,
-                    decoration: fieldDecoration(
-                      "Company Email",
-                      Icons.email_outlined,
+
+                  const Text(
+                    "Queueless",
+                    style: TextStyle(
+                      fontSize: 29,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
+                      color: dark,
                     ),
-                    validator: (v) {
-                      if (v == null || v.trim().isEmpty) {
-                        return "Enter your email";
-                      }
-                      final emailRegex = RegExp(
-                        r'^[a-zA-Z0-9.!#$%&*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$',
-                      );
-                      if (!emailRegex.hasMatch(v.trim())) {
-                        return "Enter a valid email";
-                      }
-                      return null;
-                    },
                   ),
 
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 5),
 
-                  TextFormField(
-                    controller: passwordController,
-                    obscureText: obscurePassword,
-
-                    decoration: fieldDecoration(
-                      "Password",
-
-                      Icons.lock_outline,
-
-                      suffixIcon: IconButton(
-                        onPressed: () {
-                          setState(() {
-                            obscurePassword = !obscurePassword;
-                          });
-                        },
-
-                        icon: Icon(
-                          obscurePassword
-                              ? Icons.visibility_off
-                              : Icons.visibility,
-
-                          color: textGrey,
-                        ),
-                      ),
+                  const Text(
+                    "Business Platform",
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: textGrey,
                     ),
-                    validator: (v) {
-                      if (v == null || v.isEmpty) {
-                        return "Enter your password";
-                      }
-                      if (v.length < 8) {
-                        return "Password must be at least 8 characters";
-                      }
-                      if (!RegExp(r'[A-Z]').hasMatch(v)) {
-                        return "Include at least one uppercase letter";
-                      }
-                      if (!RegExp(r'[a-z]').hasMatch(v)) {
-                        return "Include at least one lowercase letter";
-                      }
-                      if (!RegExp(r'[0-9]').hasMatch(v)) {
-                        return "Include at least one number";
-                      }
-                      if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(v)) {
-                        return "Include at least one special character";
-                      }
-                      return null;
-                    },
                   ),
 
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 30),
 
-                  SizedBox(
-                    width: double.infinity,
+                  // ------------------------------------------------
+                  // SIGNUP CARD
+                  // ------------------------------------------------
 
-                    height: 55,
+                  Container(
+                    padding: const EdgeInsets.all(24),
 
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: blue,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
 
-                        elevation: 0,
+                      borderRadius: BorderRadius.circular(24),
 
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
+                      border: Border.all(
+                        color: border,
                       ),
 
-                      onPressed: () async {
-                        await onhandleSignup();
-                      },
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.035),
+                          blurRadius: 25,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
 
-                      child: isLoading
-                          ? Center(child: CircularProgressIndicator())
-                          : const Text(
-                              "Signup",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Create your account",
+                          style: TextStyle(
+                            fontSize: 23,
+                            fontWeight: FontWeight.w700,
+                            color: dark,
+                          ),
+                        ),
+
+                        const SizedBox(height: 7),
+
+                        const Text(
+                          "Set up your business account on Queueless.",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: textGrey,
+                          ),
+                        ),
+
+                        const SizedBox(height: 28),
+
+                        // ------------------------------------------------
+                        // BUSINESS NAME
+                        // ------------------------------------------------
+
+                        TextFormField(
+                          controller: nameController,
+                          textCapitalization: TextCapitalization.words,
+                          decoration: fieldDecoration(
+                            "Business Name",
+                            Icons.business_outlined,
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // ------------------------------------------------
+                        // EMAIL
+                        // ------------------------------------------------
+
+                        TextFormField(
+                          controller: emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: fieldDecoration(
+                            "Company Email",
+                            Icons.email_outlined,
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // ------------------------------------------------
+                        // PASSWORD
+                        // ------------------------------------------------
+
+                        TextFormField(
+                          controller: passwordController,
+                          obscureText: obscurePassword,
+
+                          decoration: fieldDecoration(
+                            "Password",
+                            Icons.lock_outline_rounded,
+
+                            suffixIcon: IconButton(
+                              onPressed: () {
+                                setState(() {
+                                  obscurePassword = !obscurePassword;
+                                });
+                              },
+
+                              icon: Icon(
+                                obscurePassword
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                                color: textGrey,
+                                size: 20,
                               ),
                             ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        // ------------------------------------------------
+                        // PASSWORD INFO
+                        // ------------------------------------------------
+
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(
+                              Icons.info_outline_rounded,
+                              size: 15,
+                              color: textGrey,
+                            ),
+
+                            const SizedBox(width: 7),
+
+                            Expanded(
+                              child: Text(
+                                "Use at least 8 characters with uppercase, lowercase, number and special character.",
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  height: 1.4,
+                                  color: Colors.grey.shade500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // ------------------------------------------------
+                        // SIGNUP BUTTON
+                        // ------------------------------------------------
+
+                        SizedBox(
+                          width: double.infinity,
+                          height: 54,
+
+                          child: ElevatedButton(
+                            onPressed: isLoading
+                                ? null
+                                : () async {
+                                    await handleSignup();
+                                  },
+
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: green,
+
+                              disabledBackgroundColor:
+                                  green.withOpacity(0.6),
+
+                              elevation: 0,
+
+                              shape: RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius.circular(15),
+                              ),
+                            ),
+
+                            child: isLoading
+                                ? const SizedBox(
+                                    height: 21,
+                                    width: 21,
+
+                                    child:
+                                        CircularProgressIndicator(
+                                      strokeWidth: 2.2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Text(
+                                    "Create account",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 25),
+
+                        // ------------------------------------------------
+                        // DIVIDER
+                        // ------------------------------------------------
+
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Divider(
+                                color: Colors.grey.shade200,
+                              ),
+                            ),
+
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
+
+                              child: Text(
+                                "OR",
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey.shade400,
+                                ),
+                              ),
+                            ),
+
+                            Expanded(
+                              child: Divider(
+                                color: Colors.grey.shade200,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 22),
+
+                        // ------------------------------------------------
+                        // LOGIN
+                        // ------------------------------------------------
+
+                        Center(
+                          child: RichText(
+                            text: TextSpan(
+                              style: const TextStyle(
+                                color: textGrey,
+                                fontSize: 13.5,
+                              ),
+
+                              children: [
+                                const TextSpan(
+                                  text: "Already have an account? ",
+                                ),
+
+                                TextSpan(
+                                  text: "Sign in",
+                                  style: const TextStyle(
+                                    color: green,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+
+                                  recognizer:
+                                      TapGestureRecognizer()
+                                        ..onTap = () {
+                                          Navigator.pushReplacement(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  const AdminLoginScreen(),
+                                            ),
+                                          );
+                                        },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
 
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 22),
 
-                  Center(
-                    child: RichText(
-                      text: TextSpan(
-                        style: const TextStyle(color: textGrey, fontSize: 14),
+                  // ------------------------------------------------
+                  // FOOTER
+                  // ------------------------------------------------
 
-                        children: [
-                          const TextSpan(
-                            text: "Already have an Admin account? ",
-                          ),
+                  const Text(
+                    "Queueless",
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.grey,
+                    ),
+                  ),
 
-                          TextSpan(
-                            text: "Login Now",
+                  const SizedBox(height: 4),
 
-                            style: const TextStyle(
-                              color: blue,
-                              fontWeight: FontWeight.bold,
-                            ),
-
-                            recognizer: TapGestureRecognizer()
-                              ..onTap = () {
-                                Navigator.push(
-                                  context,
-
-                                  MaterialPageRoute(
-                                    builder: (context) => AdminLoginScreen(),
-                                  ),
-                                );
-                              },
-                          ),
-                        ],
-                      ),
+                  Text(
+                    "Simplifying business. Improving experiences.",
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey.shade400,
                     ),
                   ),
                 ],
@@ -341,3 +620,4 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
     );
   }
 }
+

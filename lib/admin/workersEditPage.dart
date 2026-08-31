@@ -50,6 +50,8 @@ class _WorkersEditPageState extends State<WorkersEditPage> {
 
   Future getSingleWorkerDetails (String wid) async{
     try {
+
+      debugPrint("Wid value => "+wid);
       final response = await http.get(Uri.parse("$BaseUrl/admin/getSingleWorkerData/$wid"),
       headers: {'Content-Type':'application/json'},
       );
@@ -57,6 +59,10 @@ class _WorkersEditPageState extends State<WorkersEditPage> {
       if(response.statusCode==200){
         final jsonbody = jsonDecode(response.body);
         return jsonbody["data"];
+      }
+
+      if(response.statusCode!=200){
+        debugPrint("Response => ${response.body} - ${response.statusCode}");
       }
     } catch (e) {
       print("Error => $e");
@@ -159,19 +165,19 @@ if (WorkerList.isEmpty) {
                           context: context,
                           builder: (context) {
                             return AlertDialog(
-                              title: Center(child: Text("Edit Service Data")),
+                              title: Center(child: Text("Edit worker Data")),
                               content: Padding(
                                 padding: const EdgeInsets.all(10.0),
                                 child: FutureBuilder(
-                                  future: getSingleWorkerDetails(workerData["_id"]),
+                                  future: getSingleWorkerDetails(workerData["workerId"].toString()),
                                   builder: (context, asyncSnapshot) {
                                     if(asyncSnapshot.connectionState==ConnectionState.waiting){
                                       return Center(child: CircularProgressIndicator(),);
                                     }else if(asyncSnapshot.hasError){
                                       return Text("something went wrong",style: TextStyle(color: Colors.red),);
                                     } else if(asyncSnapshot.hasData){
-                                      editWorkerEmail.text = asyncSnapshot.data!["WorkerEmail"].toString();
-                                      editWorkerName.text = asyncSnapshot.data!["workerName"].toString();
+                                      editWorkerEmail.text = asyncSnapshot.data["WorkerEmail"].toString();
+                                      editWorkerName.text = asyncSnapshot.data["workerName"].toString();
                                       return Column(
                                       mainAxisSize: MainAxisSize.min,
                                       children: <Widget>[
