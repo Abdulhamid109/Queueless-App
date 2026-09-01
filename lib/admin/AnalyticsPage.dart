@@ -35,6 +35,7 @@ class ChartData {
 
 class _AnalyticspageState extends State<Analyticspage> {
   Future<Map<String, dynamic>>? _timeDetails;
+  bool isunderdev = true;
 
   Future<Map<String, dynamic>> getTimeDetails() async {
     try {
@@ -154,6 +155,25 @@ class _AnalyticspageState extends State<Analyticspage> {
                 ),
               ),
 
+              // SizedBox(
+              //   height: height * 0.1,
+              //   child: GestureDetector(
+              //     onTap: () => Navigator.push(
+              //       context,
+              //       MaterialPageRoute(builder: (context) => Expensepage(bid: widget.bussinessId,)),
+              //     ),
+              //     child: Card(
+              //       color: Colors.white,
+              //       child: Padding(
+              //         padding: const EdgeInsets.all(8.0),
+              //         child: Center(child: Text("Live Queue Members")),
+              //       ),
+              //     ),
+              //   ),
+              // ),
+              // SizedBox(height: height * 0.01),
+
+
               SizedBox(height: height * 0.02),
               Text(
                 "Analytics & Growth",
@@ -164,10 +184,25 @@ class _AnalyticspageState extends State<Analyticspage> {
               SizedBox(
                 height: height * 0.1,
                 child: GestureDetector(
-                  onTap: () => Navigator.push(
+                  onTap: () =>{
+                    isunderdev?
+                    showDialog(
+                      barrierDismissible: false,
+                      context: context, builder: (context) {
+                      return AlertDialog(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        backgroundColor: Colors.red.shade100,
+                        title: Center(child: Text("Not enough data to display the analytics",style: TextStyle(fontSize: 18),textAlign: TextAlign.center,),),
+                        actions: [
+                          TextButton(onPressed: ()=>Navigator.pop(context), child: Text("Cancel"))
+                        ],
+                      );
+                    },
+                    ): Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => Expensepage(bid: widget.bussinessId,)),
                   ),
+                  },
                   child: Card(
                     color: Colors.white,
                     child: Padding(
@@ -182,8 +217,24 @@ class _AnalyticspageState extends State<Analyticspage> {
               SizedBox(
                 height: height * 0.1,
                 child: GestureDetector(
-                  onTap: ()=>Navigator.push(context, MaterialPageRoute(builder: (context) => CustomerRententionGraphpage(),)),
-                  child: Card(
+                  onTap: (){
+                    isunderdev?
+                    showDialog(
+                      barrierDismissible: false,
+                      context: context, builder: (context) {
+                      return AlertDialog(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        backgroundColor: Colors.red.shade100,
+                        title: Center(child: Text("Not enough data to display the analytics",style: TextStyle(fontSize: 18),textAlign: TextAlign.center,),),
+                        actions: [
+                          TextButton(onPressed: ()=>Navigator.pop(context), child: Text("Cancel"))
+                        ],
+                      );
+                    },
+                    )
+                    :Navigator.push(context, MaterialPageRoute(builder: (context) => CustomerRententionGraphpage(),));
+                  
+                  },child: Card(
                     color: Colors.white,
                     child: Padding(
                       padding: const EdgeInsets.all(8.0),
@@ -204,6 +255,20 @@ class _AnalyticspageState extends State<Analyticspage> {
                 height: height * 0.1,
                 child: GestureDetector(
                   onTap: () {
+                    isunderdev?
+                    showDialog(
+                      barrierDismissible: false,
+                      context: context, builder: (context) {
+                      return AlertDialog(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        backgroundColor: Colors.red.shade100,
+                        title: Center(child: Text("Not enough data to display the analytics",style: TextStyle(fontSize: 18),textAlign: TextAlign.center,),),
+                        actions: [
+                          TextButton(onPressed: ()=>Navigator.pop(context), child: Text("Cancel"))
+                        ],
+                      );
+                    },
+                    ):
                     showDialog(
                       context: context,
                       builder: (context) {

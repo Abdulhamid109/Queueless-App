@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cherry_toast/cherry_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
@@ -8,6 +9,7 @@ import 'package:queueless/Widgets/AdminDrawer.dart';
 import 'package:http/http.dart' as http;
 import 'package:queueless/Widgets/flutter_mapp.dart';
 import 'package:queueless/Widgets/locationn_error.dart';
+import 'package:queueless/admin/AdminHomePage.dart';
 import 'package:queueless/admin/serviceeditspage.dart';
 import 'package:queueless/admin/workersEditPage.dart';
 
@@ -53,6 +55,9 @@ class _BusinesseditpageState extends State<Businesseditpage> {
   TextEditingController editAdditionalInfo = TextEditingController();
   TextEditingController editCity = TextEditingController();
 
+  TextEditingController newworkerName = TextEditingController();
+  TextEditingController newworkerEmail = TextEditingController();
+
   String updatedBSTTime = "";
   String updatedBETTime = "";
   String previousBSTTime = "";
@@ -63,6 +68,8 @@ class _BusinesseditpageState extends State<Businesseditpage> {
   
 
   String BusinessCategory = "";
+  bool newWorkerloader = false;
+  bool deletebusinessloader = false;
 
   Future<void> getCurrentLocation() async {
     final PermissionGranted = await requestLocationPermission();
@@ -225,6 +232,72 @@ class _BusinesseditpageState extends State<Businesseditpage> {
     }
   }
 
+
+  Future addMoreWorkers()async{
+    setState(() {
+      newWorkerloader=true;
+    });
+    try {
+      final SharedPreferences pref = await SharedPreferences.getInstance();
+    final token = pref.getString("token");
+    final decodedData = JwtDecoder.decode(token!);
+
+    final response = await http.post(
+          Uri.parse("$BaseUrl/admin/addworkerInfo"),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            "adminId": decodedData["uid"],
+            "businessId": widget.bid,
+            "workerName": newworkerName.text.toString(),
+            "WorkerEmail": newworkerEmail.text.toString(),
+          }),
+        );
+
+    if(response.statusCode==200){
+      CherryToast.success(
+        title: Text("successfully added new worker"),
+      ).show(context);
+      newworkerEmail.clear();
+      newworkerName.clear();
+      Navigator.pop(context);
+    }
+
+    if(response.statusCode!=200){
+      CherryToast.error(title: Text("Something went wrong try again later"),).show(context);
+    }
+
+    } catch (e) {
+      debugPrint("Error => $e");
+    } finally{
+      setState(() {
+        newWorkerloader=false;
+      });
+    }
+  }
+  
+  Future deleteBusiness()async{
+    setState(() {
+      deletebusinessloader=true;
+    });
+    try {
+      final response = await http.delete(Uri.parse("$BaseUrl/admin/deletebusiness/${widget.bid}"));
+      if(response.statusCode==200){
+        CherryToast.success(title: Text("Successfully deleted the business"),).show(context);
+        Navigator.pop(context);
+        Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => Adminhomepage(),), (route) => true,);
+      }
+      if(response.statusCode!=200){
+        CherryToast.error(title: Text("Something went wrong"),).show(context);
+      }
+    } catch (e) {
+      debugPrint("error -> $e");
+    } finally{
+      setState(() {
+        deletebusinessloader=false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     double height = MediaQuery.of(context).size.height * 1;
@@ -232,7 +305,9 @@ class _BusinesseditpageState extends State<Businesseditpage> {
     return Scaffold(
       appBar: Adminappbar(),
       drawer: Admindrawer(),
-      body: SingleChildScrollView(
+      body: GestureDetector(
+        onTap: ()=>FocusScope.of(context).unfocus(),
+        child: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(28.0),
           child: Column(
@@ -1005,25 +1080,141 @@ class _BusinesseditpageState extends State<Businesseditpage> {
                 color: Colors.white,
                 child: ListTile(
                   title: Text("Worker Data", style: TextStyle(fontSize: 16)),
-                  trailing: IconButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              WorkersEditPage(bid: widget.bid),
-                        ),
-                      );
-                    },
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  WorkersEditPage(bid: widget.bid),
+                            ),
+                          );
+                        },
+                                      
+                        icon: Icon(Icons.edit_note, color: Colors.blue),
+                      ),
 
-                    icon: Icon(Icons.edit_note, color: Colors.blue),
+                      IconButton(
+                      icon: Icon(Icons.person_add ,color: Colors.blue),
+                      onPressed: (){
+                      showDialog(
+                        barrierDismissible: false,
+                        context: context, builder: (context) {
+                        return AlertDialog(
+                          title: Text("Add More workers"),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              TextField(
+                                controller: newworkerName,
+                                decoration: InputDecoration(
+                                  enabledBorder: OutlineInputBorder(),
+                                  focusedBorder: OutlineInputBorder(),
+                                  hintText: "Worker Name"
+                                ),
+                              ),
+                              SizedBox(height: height*0.01,),
+                              TextField(
+                                controller: newworkerEmail,
+                                decoration: InputDecoration(
+                                  enabledBorder: OutlineInputBorder(),
+                                  focusedBorder: OutlineInputBorder(),
+                                  hintText: "Worker Email"
+                                ),
+                              ),
+                              SizedBox(height: height*0.01,),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                children: [
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.grey,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
+                                ),
+                                    onPressed: ()=>Navigator.pop(context), child: Text("Cancel")),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
+                                ),
+                                    onPressed: ()async{
+                                      if(newworkerEmail.text.isEmpty || newworkerName.text.isEmpty){
+                                        CherryToast.error(title: Text("Incomplete values"),);
+                                        setState(() {
+                                          newWorkerloader=false;
+                                        });
+                                      }
+                                      await addMoreWorkers();
+                                  }, child: newWorkerloader?Center(child: CircularProgressIndicator(color: Colors.white,),):Text("Add")),
+
+                                ],
+                              )
+
+                            ],
+                          ),
+                        );
+                      },);
+                      }
+                    )
+                  
+                    ],
                   ),
                 ),
               ),
+
+              SizedBox(height: height*0.02,),
+              SizedBox(
+                width: width*1,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
+                  ),
+                  onPressed: (){
+                    showDialog(
+                      barrierDismissible: false,
+                      context: context, builder: (context) {
+                      return AlertDialog(
+                        title: Center(child: Text("Are You Sure you want to delete the bussiness?",style: TextStyle(fontSize: 18),)),
+                        content: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Center(child: Text("This action is irreversible",style: TextStyle(fontSize: 15,color: Colors.red),),),
+                            SizedBox(height: height*0.02,),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
+                                ),
+                                  onPressed: ()=>Navigator.pop(context), child: Text("Cancel",style: TextStyle(color: Colors.white))),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                                  onPressed: ()async{
+                                    await deleteBusiness();
+                                  }, child: Text("Delete",style: TextStyle(color: Colors.white),))
+                              ],
+                            )
+                          ],
+                        ),
+                      );
+                    },);
+                  }, child: Text("Delete Your Business Profile",style: TextStyle(color: Colors.white),)),
+              )
             ],
           ),
         ),
       ),
-    );
+    
+      )
+      
+      );
   }
 }

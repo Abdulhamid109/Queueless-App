@@ -1,11 +1,13 @@
-
 import 'dart:convert';
 
+import 'package:cherry_toast/cherry_toast.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:queueless/admin/LoginScreen.dart';
+import 'package:queueless/admin/adminOTPPage.dart';
 import 'package:queueless/constant/env.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AdminSignupScreen extends StatefulWidget {
   const AdminSignupScreen({super.key});
@@ -37,50 +39,36 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
   }
 
   InputDecoration fieldDecoration(
-  String label,
-  IconData icon, {
-  Widget? suffixIcon,
-}) {
-  return InputDecoration(
-    labelText: label,
+    String label,
+    IconData icon, {
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      labelText: label,
 
-    labelStyle: const TextStyle(
-      color: textGrey,
-      fontSize: 14,
-    ),
+      labelStyle: const TextStyle(color: textGrey, fontSize: 14),
 
-    prefixIcon: Icon(
-      icon,
-      color: textGrey,
-      size: 20,
-    ),
+      prefixIcon: Icon(icon, color: textGrey, size: 20),
 
-    suffixIcon: suffixIcon,
+      suffixIcon: suffixIcon,
 
-    filled: true,
-    fillColor: Colors.white,
+      filled: true,
+      fillColor: Colors.white,
 
-    contentPadding: const EdgeInsets.symmetric(
-      horizontal: 18,
-      vertical: 18,
-    ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
 
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(15),
-      borderSide: const BorderSide(
-        color: border,
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(15),
+        borderSide: const BorderSide(color: border),
       ),
-    ),
 
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(15),
-      borderSide: const BorderSide(
-        color: green,
-        width: 1.5,
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(15),
+        borderSide: const BorderSide(color: green, width: 1.5),
       ),
-    ),
-  );
-}
+    );
+  }
+
   Future<void> handleSignup() async {
     if (nameController.text.trim().isEmpty ||
         emailController.text.trim().isEmpty ||
@@ -132,9 +120,7 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
     try {
       final response = await http.post(
         Uri.parse("$BaseUrl/admin/auth/signup"),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'name': nameController.text.trim(),
           'email': emailController.text.trim().toLowerCase(),
@@ -148,23 +134,21 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
         ScaffoldMessenger.of(context)
             .showSnackBar(
               const SnackBar(
-                content: Text(
-                  "Account created successfully.",
-                ),
+                content: Text("Account created successfully."),
                 duration: Duration(seconds: 1),
               ),
             )
             .closed
             .then((value) {
-          if (!mounted) return;
+              if (!mounted) return;
 
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const AdminLoginScreen(),
-            ),
-          );
-        });
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AdminLoginScreen(),
+                ),
+              );
+            });
       } else {
         String errorMessage = "Something went wrong.";
 
@@ -196,6 +180,7 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
     }
   }
 
+  bool isloading = false;
   void showError(String message) {
     if (!mounted) return;
 
@@ -207,17 +192,11 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
       MaterialBanner(
         backgroundColor: Colors.red.shade50,
 
-        leading: const Icon(
-          Icons.error_outline_rounded,
-          color: Colors.red,
-        ),
+        leading: const Icon(Icons.error_outline_rounded, color: Colors.red),
 
         content: Text(
           message,
-          style: const TextStyle(
-            fontSize: 13,
-            color: dark,
-          ),
+          style: const TextStyle(fontSize: 13, color: dark),
         ),
 
         actions: [
@@ -227,10 +206,7 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
             },
             child: const Text(
               "Dismiss",
-              style: TextStyle(
-                color: green,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(color: green, fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -244,6 +220,77 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
     });
   }
 
+  Future<void> handlePreSignup() async {
+    setState(() {
+      isloading = true;
+    });
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      prefs.setString("name", nameController.text.toString());
+      prefs.setString("email", emailController.text.toLowerCase());
+      prefs.setString("password", passwordController.text);
+      debugPrint("Email => ${emailController.text}");
+
+      final response = await http.post(
+        Uri.parse("$BaseUrl/admin/auth/presignup"),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': emailController.text.toLowerCase().toString(),
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        CherryToast.success(
+          title: Text("Successfully sent the OTP Email"),
+        ).show(context);
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AdminOTPScreen(
+              registeredEmail: emailController.text.trim().toString(),
+              reason: "signup",
+            ),
+          ),
+        );
+      } else {
+        print(
+          "Some Error happened with code as ${response.statusCode} => ${response.body} ",
+        );
+        var error = jsonDecode(response.body);
+        final messenger = ScaffoldMessenger.of(context);
+        messenger.showMaterialBanner(
+          MaterialBanner(
+            backgroundColor: Colors.red.shade200,
+            leading: Icon(Icons.error, color: Colors.red),
+            content: Text(error["error"]),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  messenger.hideCurrentMaterialBanner();
+                },
+                child: Text(
+                  "Dismiss",
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w300),
+                ),
+              ),
+            ],
+          ),
+        );
+        Future.delayed(Duration(seconds: 5), () {
+          if (messenger.mounted) {
+            messenger.hideCurrentMaterialBanner();
+          }
+        });
+      }
+    } catch (e) {
+      print("Something went wrong $e");
+    } finally {
+      setState(() {
+        isloading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -254,22 +301,13 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
 
-            padding: const EdgeInsets.symmetric(
-              horizontal: 22,
-              vertical: 30,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 30),
 
             child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: 460,
-              ),
+              constraints: const BoxConstraints(maxWidth: 460),
 
               child: Column(
                 children: [
-                  // ------------------------------------------------
-                  // BRAND
-                  // ------------------------------------------------
-
                   Container(
                     height: 64,
                     width: 64,
@@ -311,10 +349,6 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
 
                   const SizedBox(height: 30),
 
-                  // ------------------------------------------------
-                  // SIGNUP CARD
-                  // ------------------------------------------------
-
                   Container(
                     padding: const EdgeInsets.all(24),
 
@@ -323,9 +357,7 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
 
                       borderRadius: BorderRadius.circular(24),
 
-                      border: Border.all(
-                        color: border,
-                      ),
+                      border: Border.all(color: border),
 
                       boxShadow: [
                         BoxShadow(
@@ -352,17 +384,10 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
 
                         const Text(
                           "Set up your business account on Queueless.",
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: textGrey,
-                          ),
+                          style: TextStyle(fontSize: 14, color: textGrey),
                         ),
 
                         const SizedBox(height: 28),
-
-                        // ------------------------------------------------
-                        // BUSINESS NAME
-                        // ------------------------------------------------
 
                         TextFormField(
                           controller: nameController,
@@ -375,10 +400,6 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
 
                         const SizedBox(height: 16),
 
-                        // ------------------------------------------------
-                        // EMAIL
-                        // ------------------------------------------------
-
                         TextFormField(
                           controller: emailController,
                           keyboardType: TextInputType.emailAddress,
@@ -389,10 +410,6 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
                         ),
 
                         const SizedBox(height: 16),
-
-                        // ------------------------------------------------
-                        // PASSWORD
-                        // ------------------------------------------------
 
                         TextFormField(
                           controller: passwordController,
@@ -422,10 +439,6 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
 
                         const SizedBox(height: 10),
 
-                        // ------------------------------------------------
-                        // PASSWORD INFO
-                        // ------------------------------------------------
-
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -452,10 +465,6 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
 
                         const SizedBox(height: 20),
 
-                        // ------------------------------------------------
-                        // SIGNUP BUTTON
-                        // ------------------------------------------------
-
                         SizedBox(
                           width: double.infinity,
                           height: 54,
@@ -464,20 +473,18 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
                             onPressed: isLoading
                                 ? null
                                 : () async {
-                                    await handleSignup();
+                                    await handlePreSignup();
                                   },
 
                             style: ElevatedButton.styleFrom(
                               backgroundColor: green,
 
-                              disabledBackgroundColor:
-                                  green.withOpacity(0.6),
+                              disabledBackgroundColor: green.withOpacity(0.6),
 
                               elevation: 0,
 
                               shape: RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.circular(15),
+                                borderRadius: BorderRadius.circular(15),
                               ),
                             ),
 
@@ -486,8 +493,7 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
                                     height: 21,
                                     width: 21,
 
-                                    child:
-                                        CircularProgressIndicator(
+                                    child: CircularProgressIndicator(
                                       strokeWidth: 2.2,
                                       color: Colors.white,
                                     ),
@@ -505,21 +511,14 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
 
                         const SizedBox(height: 25),
 
-                        // ------------------------------------------------
-                        // DIVIDER
-                        // ------------------------------------------------
-
                         Row(
                           children: [
                             Expanded(
-                              child: Divider(
-                                color: Colors.grey.shade200,
-                              ),
+                              child: Divider(color: Colors.grey.shade200),
                             ),
 
                             Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(
+                              padding: const EdgeInsets.symmetric(
                                 horizontal: 12,
                               ),
 
@@ -534,18 +533,12 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
                             ),
 
                             Expanded(
-                              child: Divider(
-                                color: Colors.grey.shade200,
-                              ),
+                              child: Divider(color: Colors.grey.shade200),
                             ),
                           ],
                         ),
 
                         const SizedBox(height: 22),
-
-                        // ------------------------------------------------
-                        // LOGIN
-                        // ------------------------------------------------
 
                         Center(
                           child: RichText(
@@ -567,17 +560,16 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
                                     fontWeight: FontWeight.w700,
                                   ),
 
-                                  recognizer:
-                                      TapGestureRecognizer()
-                                        ..onTap = () {
-                                          Navigator.pushReplacement(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  const AdminLoginScreen(),
-                                            ),
-                                          );
-                                        },
+                                  recognizer: TapGestureRecognizer()
+                                    ..onTap = () {
+                                      Navigator.pushReplacement(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              const AdminLoginScreen(),
+                                        ),
+                                      );
+                                    },
                                 ),
                               ],
                             ),
@@ -588,10 +580,6 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
                   ),
 
                   const SizedBox(height: 22),
-
-                  // ------------------------------------------------
-                  // FOOTER
-                  // ------------------------------------------------
 
                   const Text(
                     "Queueless",
@@ -606,10 +594,7 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
 
                   Text(
                     "Simplifying business. Improving experiences.",
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey.shade400,
-                    ),
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
                   ),
                 ],
               ),
@@ -620,4 +605,3 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
     );
   }
 }
-

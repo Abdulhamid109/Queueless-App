@@ -1,6 +1,6 @@
-import 'dart:io';
+// import 'dart:io';
 
-import 'package:cherry_toast/cherry_toast.dart';
+// import 'package:cherry_toast/cherry_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
@@ -16,7 +16,7 @@ import 'package:queueless/helper/getAddressFromLatLong.dart';
 import 'package:queueless/helper/getLatLlongfromAddress.dart';
 import 'package:queueless/models/businessInformationModal.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:image_picker/image_picker.dart';
+// import 'package:image_picker/image_picker.dart';
 
 
 class Businessinformation extends StatefulWidget {

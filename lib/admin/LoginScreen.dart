@@ -4,6 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:queueless/admin/AdminHomePage.dart';
 import 'package:queueless/admin/SignupScreen.dart';
+import 'package:queueless/admin/adminforgotpasswordPage.dart';
 import 'package:queueless/constant/env.dart';
 import 'package:queueless/worker/workerloginScreen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -316,7 +317,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                         Align(
                           alignment: Alignment.centerRight,
                           child: TextButton(
-                            onPressed: () {},
+                            onPressed: () =>Navigator.push(context, MaterialPageRoute(builder: (context) => AdminForgotpasswordscreen(),)),
                             style: TextButton.styleFrom(
                               padding: EdgeInsets.zero,
                               minimumSize: Size.zero,
