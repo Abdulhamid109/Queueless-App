@@ -1,4 +1,4 @@
-package com.example.queueless
+package com.queuelessindia.app
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -264,11 +264,14 @@ class _LocationnErrorState extends State<LocationnError> {
                     color: Color(0xFF8A8A8A),
                   ),
                 ),
+                
+                SizedBox(height:10),
                 const Text(
-                  "Location access should be 'Allow all the time' for background queue tracking",
+                  "Note: Location access should be 'Allow all the time' for background queue tracking",
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 9,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
                     color: Color.fromARGB(255, 252, 3, 3),
                   ),
                 ),

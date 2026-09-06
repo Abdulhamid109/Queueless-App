@@ -5,6 +5,7 @@ import 'package:queueless/Customer/FeedbackScreen.dart';
 import 'package:queueless/Customer/HomeScreen.dart';
 import 'package:queueless/Customer/LoginScreen.dart';
 import 'package:queueless/Customer/ProfileScreen.dart';
+import 'package:queueless/Customer/help&Support.dart';
 import 'package:queueless/helper/handleLogoutFunctionality.dart';
 
 class Customerdrawer extends StatefulWidget {
@@ -146,6 +147,19 @@ class _CustomerdrawerState extends State<Customerdrawer> {
                         context,
                         MaterialPageRoute(
                           builder: (context) => Feedbackscreen(),
+                        ),
+                      );
+                    },
+                  ),
+
+                  _drawerItem(
+                    icon: Icons.help,
+                    title: "Help & Support",
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => HelpSupport(),
                         ),
                       );
                     },

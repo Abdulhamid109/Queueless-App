@@ -429,165 +429,205 @@ class _NotificationScreenState extends State<NotificationScreen> {
     );
   }
 
-  Widget _buildNotificationCard(Map<String, dynamic> notification) {
-    final acknowledged = notification["ackStatus"];
+  Widget _buildNotificationCard(
+    Map<String, dynamic> notification) {
 
-    final bool isComing = acknowledged == "comming";
+  final String title =
+      notification["title"]?.toString() ?? "Queueless";
 
-    final bool isNotComing = acknowledged == "notcomming";
+  final String body =
+      notification["body"]?.toString() ?? "";
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+  final String acknowledged =
+      notification["ackStatus"]?.toString() ?? "pending";
+
+  final bool isComing = acknowledged == "comming";
+  final bool isNotComing = acknowledged == "notcomming";
+
+  return Container(
+    margin: const EdgeInsets.only(bottom: 12),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(
+        color: Colors.grey.shade200,
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(15),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _statusIcon(
-                  icon: isComing
-                      ? Icons.check_circle_outline_rounded
-                      : isNotComing
-                      ? Icons.cancel_outlined
-                      : Icons.notifications_none_rounded,
-                  color: isComing
-                      ? primaryGreen
-                      : isNotComing
-                      ? Colors.red.shade600
-                      : primaryGreen,
-                  background: isComing
-                      ? lightGreen
-                      : isNotComing
-                      ? Colors.red.shade50
-                      : lightGreen,
+    ),
+    child: Padding(
+      padding: const EdgeInsets.all(15),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+
+              _statusIcon(
+                icon: isComing
+                    ? Icons.check_circle_outline_rounded
+                    : isNotComing
+                        ? Icons.cancel_outlined
+                        : Icons.notifications_none_rounded,
+
+                color: isComing
+                    ? primaryGreen
+                    : isNotComing
+                        ? Colors.red.shade600
+                        : primaryGreen,
+
+                background: isComing
+                    ? lightGreen
+                    : isNotComing
+                        ? Colors.red.shade50
+                        : lightGreen,
+              ),
+
+              const SizedBox(width: 12),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+
+                    // BACKEND TITLE
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: darkText,
+                      ),
+                    ),
+
+                    const SizedBox(height: 5),
+
+                    // BACKEND BODY
+                    Text(
+                      body,
+                      style: TextStyle(
+                        fontSize: 13,
+                        height: 1.4,
+                        color: secondaryText,
+                      ),
+                    ),
+
+                    const SizedBox(height: 5),
+
+                    // BACKEND CREATED AT
+                    Text(
+                      _formatCreatedAt(
+                        notification["createdAt"],
+                      ),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: secondaryText,
+                      ),
+                    ),
+                  ],
                 ),
+              ),
+            ],
+          ),
 
-                const SizedBox(width: 12),
+          // -----------------------------------------
+          // PENDING
+          // -----------------------------------------
 
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Queue Update",
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: primaryGreen,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
+          if (acknowledged == "pending")
+            _buildPendingNotification(notification),
 
-                      const SizedBox(height: 3),
+          // -----------------------------------------
+          // COMING
+          // -----------------------------------------
 
-                      Text(
-                        "Your turn is within 15 mins",
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: darkText,
-                        ),
-                      ),
+          if (isComing) ...[
+            const SizedBox(height: 15),
 
-                      const SizedBox(height: 4),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 11,
+              ),
+              decoration: BoxDecoration(
+                color: lightGreen,
+                borderRadius: BorderRadius.circular(11),
+              ),
+              child: Row(
+                children: [
 
-                      Text(
-                        _formatCreatedAt(notification["createdAt"]),
-                        style: TextStyle(fontSize: 11, color: secondaryText),
-                      ),
-                    ],
+                  Icon(
+                    Icons.check_circle_rounded,
+                    size: 18,
+                    color: primaryGreen,
                   ),
-                ),
-              ],
+
+                  const SizedBox(width: 8),
+
+                  Expanded(
+                    child: Text(
+                      "Thank you for acknowledging. "
+                      "Please reach your slot on time.",
+                      style: TextStyle(
+                        color: primaryGreen,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
+          ]
 
-            if (isComing) ...[
-              const SizedBox(height: 15),
+          // -----------------------------------------
+          // NOT COMING
+          // -----------------------------------------
 
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 11,
-                ),
-                decoration: BoxDecoration(
-                  color: lightGreen,
-                  borderRadius: BorderRadius.circular(11),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.check_circle_rounded,
-                      size: 18,
-                      color: primaryGreen,
-                    ),
+          else if (isNotComing) ...[
+            const SizedBox(height: 15),
 
-                    const SizedBox(width: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 11,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(11),
+              ),
+              child: Row(
+                children: [
 
-                    Expanded(
-                      child: Text(
-                        "Thank you for acknowledging. Please reach your slot on time.",
-                        style: TextStyle(
-                          color: primaryGreen,
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w500,
-                        ),
+                  Icon(
+                    Icons.cancel_rounded,
+                    size: 18,
+                    color: Colors.red.shade600,
+                  ),
+
+                  const SizedBox(width: 8),
+
+                  Expanded(
+                    child: Text(
+                      "Your slot has been terminated.",
+                      style: TextStyle(
+                        color: Colors.red.shade700,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ] else if (isNotComing) ...[
-              const SizedBox(height: 15),
-
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 11,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(11),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.cancel_rounded,
-                      size: 18,
-                      color: Colors.red.shade600,
-                    ),
-
-                    const SizedBox(width: 8),
-
-                    Expanded(
-                      child: Text(
-                        "Your slot has been terminated.",
-                        style: TextStyle(
-                          color: Colors.red.shade700,
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ] else
-              _buildPendingNotification(notification),
+            ),
           ],
-        ),
+        ],
       ),
-    );
-  }
-
+    ),
+  );
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(

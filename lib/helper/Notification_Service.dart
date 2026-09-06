@@ -28,9 +28,13 @@ class NotificationService {
 
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
       'high_importance_channel',
-      'High Importance Channel',
-      description: 'High importance notifications',
+      'Queueless Notifications',
+      description: 'Notifications from Queueless',
       importance: Importance.high,
+      playSound: true,
+      sound: RawResourceAndroidNotificationSound(
+      'queuelessnotification',
+    ),
     );
 
     await flutterLocalNotificationsPlugin
@@ -69,9 +73,11 @@ class NotificationService {
     const AndroidNotificationDetails androidDetails =
         AndroidNotificationDetails(
       'high_importance_channel',
-      'High Importance Channel',
+      'Queueless Notifications',
       importance: Importance.high,
       priority: Priority.high,
+      playSound: true, 
+      sound: RawResourceAndroidNotificationSound( 'queuelessnotification', ),
     );
 
     const NotificationDetails notificationDetails = NotificationDetails(

@@ -51,12 +51,11 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyAkkviwyWW9PIjAUdP8yVAJO1gbNo8DB5Y',
-    appId: '1:196032750035:android:17d30fde5a30f050c44f26',
+    appId: '1:196032750035:android:f95e5fa75f77d81fc44f26',
     messagingSenderId: '196032750035',
     projectId: 'queueless-fcm',
     storageBucket: 'queueless-fcm.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyDcauJvLBgMOqOQujxsg_B8SAaN56n0Dq0',
     appId: '1:196032750035:ios:18b864cc612d1be1c44f26',
@@ -65,7 +64,6 @@ class DefaultFirebaseOptions {
     storageBucket: 'queueless-fcm.firebasestorage.app',
     iosBundleId: 'com.example.queueless',
   );
-
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyDcauJvLBgMOqOQujxsg_B8SAaN56n0Dq0',
     appId: '1:196032750035:ios:18b864cc612d1be1c44f26',

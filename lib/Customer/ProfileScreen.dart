@@ -252,6 +252,37 @@ class _ProfilescreenState extends State<Profilescreen> {
     CherryToast.error(title: Text("Something went wrong")).show(context);
   }
 }
+
+  bool deleteloader = false;
+
+  Future <void> deleteProfile()async{
+    setState(() {
+      deleteloader=true;
+    });
+    try{
+      SharedPreferences pref = await SharedPreferences.getInstance();
+    final token = pref.getString("token");
+    final decodedData = JwtDecoder.decode(token!);
+    final id = decodedData["uid"];
+    debugPrint("User id inside the delete method => $id");
+      final response = await http.delete(Uri.parse("$BaseUrl/customer/deleteaccount/$id"));
+      if(response.statusCode==200){
+        CherryToast.success(title: Text("Account successfully deleted"),).show(context);
+        Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => LoginScreen(),), (route) => true);
+      }
+      if(response.statusCode!=200){
+        final resbody = await jsonDecode(response.body);
+        CherryToast.error(title: Text("Something went wrong"),).show(context);
+        debugPrint("error => $resbody");
+      }
+    }catch(e){
+      debugPrint("Error => $e");
+    }finally{
+      setState(() {
+        deleteloader=false;
+      });
+    }
+  }
   @override
   void initState() {
     super.initState();
@@ -1192,6 +1223,68 @@ class _ProfilescreenState extends State<Profilescreen> {
                       ),
                     ),
 
+                    const SizedBox(height: 10),
+                    
+                    SizedBox(
+                      width: double.infinity,
+                      height: 46,
+
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          showDialog(
+                          barrierDismissible: false,
+                          barrierColor: Colors.black38,
+                          context: context, builder: (context) {
+                          return AlertDialog(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            title: Center(child: Text("Are You sure you want to Delete Account?",style: TextStyle(fontSize: 17),textAlign: TextAlign.center,)),
+                            content: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Center(child: Text("This action is irreversible",style: TextStyle(color: Colors.red,),),),
+                              ],
+                            ),
+                            actions: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                children: <Widget>[
+                                  TextButton(onPressed: ()async{
+                                    // await onhandleLogout(context, LoginScreen());
+                                    await deleteProfile();
+                                  }, child: deleteloader?Center(child: CircularProgressIndicator(),):Text("Delete")),
+                                  TextButton(onPressed: ()=>Navigator.pop(context), child: Text("Cancel"))
+                                ],
+                              )
+                            ],
+                          );
+                        },);
+                        },
+
+                        icon: const Icon(Icons.delete, size: 18),
+
+                        label: const Text(
+                          "Delete Account",
+
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red.shade500,
+
+                          foregroundColor: Colors.white,
+
+                          elevation: 0,
+
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    
                     const SizedBox(height: 15),
 
                     Center(

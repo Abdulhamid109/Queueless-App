@@ -97,9 +97,14 @@ class _QueuescreenState extends State<Queuescreen> {
   // String currentAddress = "";
   // String UpdatedAddress = "";
   bool isloading = false;
+  bool currentLocationLoading = false;
 
   Future<void> getCurrentLocation() async {
-    final PermissionGranted = await requestLocationPermission();
+    setState(() {
+      currentLocationLoading=true;
+    });
+    try {
+         final PermissionGranted = await requestLocationPermission();
     if (!PermissionGranted) {
       Navigator.push(
         context,
@@ -132,6 +137,7 @@ class _QueuescreenState extends State<Queuescreen> {
     // double heading = position.heading;
 
     print('--------------Lat: $lat, Long: $long -------------------------');
+
     // final address = await getAddressFromLatLong(
     //   position.latitude,
     //   position.longitude,
@@ -142,6 +148,14 @@ class _QueuescreenState extends State<Queuescreen> {
       longitude = position.longitude;
       // currentAddress = address;
     });
+  
+    } catch (e) {
+      debugPrint("error => $e");
+    } finally{
+      setState(() {
+        currentLocationLoading=false;
+      });
+    }
   }
 
   Future getBusinessCoordinates() async {}
@@ -181,7 +195,7 @@ class _QueuescreenState extends State<Queuescreen> {
       if (response.statusCode != 200) {
         final body = jsonDecode(response.body);
         debugPrint("Error => $body");
-        CherryToast.error(title: Text(body["error"])).show(context);
+        CherryToast.info(title: Text("User not in the Queue")).show(context);
         setState(() {
           queuePresency = false;
           userJoined = false;
@@ -553,217 +567,247 @@ class _QueuescreenState extends State<Queuescreen> {
                       const SizedBox(width: 8),
                       GestureDetector(
                         onTap: () async {
+                          void Function(void Function())? refreshDialog;
+    getCurrentLocation().then((_) {
+      if (!mounted) return;
+      try {
+        refreshDialog?.call(() {});
+      } catch (_) {}
+    });
                           showDialog(
                             context: context,
                             barrierDismissible: true,
                             builder: (context) {
-                              return Dialog(
-                                backgroundColor: Colors.transparent,
-                                insetPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 24,
-                                ),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(24),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.15),
-                                        blurRadius: 30,
-                                        offset: const Offset(0, 10),
-                                      ),
-                                    ],
+                              return StatefulBuilder(
+                                 builder: (context, setDialogState) {
+                                  refreshDialog = setDialogState;
+                                   return Dialog(
+                                  backgroundColor: Colors.transparent,
+                                  insetPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 24,
                                   ),
-                                  clipBehavior: Clip.antiAlias,
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      // ==================================================
-                                      // HEADER
-                                      // ==================================================
-                                      Padding(
-                                        padding: const EdgeInsets.fromLTRB(
-                                          20,
-                                          18,
-                                          12,
-                                          14,
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Container(
-                                              height: 42,
-                                              width: 42,
-                                              decoration: BoxDecoration(
-                                                color: const Color(
-                                                  0xFF159447,
-                                                ).withOpacity(0.1),
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                              ),
-                                              child: const Icon(
-                                                Icons.location_on_rounded,
-                                                color: Color(0xFF159447),
-                                                size: 22,
-                                              ),
-                                            ),
-
-                                            const SizedBox(width: 12),
-
-                                            const Expanded(
+                                  child: currentLocationLoading?
+                                  const Padding(
+                                              padding: EdgeInsets.all(30),
                                               child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
+                                                mainAxisSize: MainAxisSize.min,
                                                 children: [
                                                   Text(
-                                                    "Business Location",
-                                                    style: TextStyle(
-                                                      fontSize: 17,
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                      color: Color(0xFF171717),
-                                                    ),
+                                                    "Fetching the current location coordinates",
+                                                    style: TextStyle(color: Colors.white),
+                                                    textAlign: TextAlign.center,
                                                   ),
-                                                  SizedBox(height: 2),
-                                                  Text(
-                                                    "See how far you are",
-                                                    style: TextStyle(
-                                                      fontSize: 12,
-                                                      color: Color(0xFF777777),
-                                                    ),
+                                                  SizedBox(height: 16),
+                                                  CircularProgressIndicator(
+                                                    color: Colors.white,
                                                   ),
                                                 ],
                                               ),
-                                            ),
-
-                                            // Close icon
-                                            IconButton(
-                                              onPressed: () {
-                                                Navigator.pop(context);
-                                              },
-                                              icon: const Icon(
-                                                Icons.close_rounded,
-                                                color: Color(0xFF777777),
+                                            )
+                                  :Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(24),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.15),
+                                          blurRadius: 30,
+                                          offset: const Offset(0, 10),
+                                        ),
+                                      ],
+                                    ),
+                                    clipBehavior: Clip.antiAlias,
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.fromLTRB(
+                                            20,
+                                            18,
+                                            12,
+                                            14,
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Container(
+                                                height: 42,
+                                                width: 42,
+                                                decoration: BoxDecoration(
+                                                  color: const Color(
+                                                    0xFF159447,
+                                                  ).withOpacity(0.1),
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                                child: const Icon(
+                                                  Icons.location_on_rounded,
+                                                  color: Color(0xFF159447),
+                                                  size: 22,
+                                                ),
                                               ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-
-                                      
-                                      SizedBox(
-                                        height: 330,
-                                        width: double.infinity,
-                                        child: Fluttermapdistance(
-                                          userlatitude: latitude,
-                                          userlongitude: longitude,
-                                          businesslatitude: widget.blatitude,
-                                          businesslongitude: widget.blongitude,
-                                        ),
-                                      ),
-
-                                      
-                                      Padding(
-                                        padding: const EdgeInsets.fromLTRB(
-                                          16,
-                                          14,
-                                          16,
-                                          18,
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Expanded(
-                                              child: SizedBox(
-                                                height: 50,
-                                                child: OutlinedButton(
-                                                  onPressed: () {
-                                                    Navigator.pop(context);
-                                                  },
-                                                  style: OutlinedButton.styleFrom(
-                                                    foregroundColor:
-                                                        Colors.red.shade500,
-                                                    side: BorderSide(
-                                                      color:
-                                                          Colors.red.shade200,
-                                                      width: 1.2,
+                                
+                                              const SizedBox(width: 12),
+                                
+                                              const Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      "Business Location",
+                                                      style: TextStyle(
+                                                        fontSize: 17,
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                        color: Color(0xFF171717),
+                                                      ),
                                                     ),
-                                                    shape: RoundedRectangleBorder(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            14,
-                                                          ),
+                                                    SizedBox(height: 2),
+                                                    Text(
+                                                      "See how far you are",
+                                                      style: TextStyle(
+                                                        fontSize: 12,
+                                                        color: Color(0xFF777777),
+                                                      ),
                                                     ),
-                                                  ),
-                                                  child: const Text(
-                                                    "Close",
-                                                    style: TextStyle(
-                                                      fontSize: 14,
-                                                      fontWeight:
-                                                          FontWeight.w600,
+                                                  ],
+                                                ),
+                                              ),
+                                
+                                              // Close icon
+                                              IconButton(
+                                                onPressed: () {
+                                                  Navigator.pop(context);
+                                                },
+                                                icon: const Icon(
+                                                  Icons.close_rounded,
+                                                  color: Color(0xFF777777),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                
+                                        
+                                        SizedBox(
+                                          height: 330,
+                                          width: double.infinity,
+                                          child: Fluttermapdistance(
+                                            userlatitude: latitude,
+                                            userlongitude: longitude,
+                                            businesslatitude: widget.blatitude,
+                                            businesslongitude: widget.blongitude,
+                                          ),
+                                        ),
+                                
+                                        
+                                        Padding(
+                                          padding: const EdgeInsets.fromLTRB(
+                                            16,
+                                            14,
+                                            16,
+                                            18,
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Expanded(
+                                                child: SizedBox(
+                                                  height: 50,
+                                                  child: OutlinedButton(
+                                                    onPressed: () {
+                                                      Navigator.pop(context);
+                                                    },
+                                                    style: OutlinedButton.styleFrom(
+                                                      foregroundColor:
+                                                          Colors.red.shade500,
+                                                      side: BorderSide(
+                                                        color:
+                                                            Colors.red.shade200,
+                                                        width: 1.2,
+                                                      ),
+                                                      shape: RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              14,
+                                                            ),
+                                                      ),
+                                                    ),
+                                                    child: const Text(
+                                                      "Close",
+                                                      style: TextStyle(
+                                                        fontSize: 14,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
                                                     ),
                                                   ),
                                                 ),
                                               ),
-                                            ),
-
-                                            const SizedBox(width: 12),
-
-                                            Expanded(
-                                              flex: 2,
-                                              child: SizedBox(
-                                                height: 50,
-                                                child: ElevatedButton.icon(
-                                                  onPressed: () async {
-                                                    final googleMapsUrl = Uri.parse(
-                                                      'https://www.google.com/maps/dir/?api=1'
-                                                      '&origin=$latitude,$longitude'
-                                                      '&destination=${widget.blatitude},${widget.blongitude}'
-                                                      '&travelmode=driving',
-                                                    );
-                                                    await launchUrl(
-                                                      googleMapsUrl,
-                                                      mode: LaunchMode
-                                                          .externalApplication,
-                                                    );
-                                                  },
-                                                  icon: const Icon(
-                                                    Icons.navigation_rounded,
-                                                    size: 19,
-                                                  ),
-                                                  label: const Text(
-                                                    "Navigate",
-                                                    style: TextStyle(
-                                                      fontSize: 14,
-                                                      fontWeight:
-                                                          FontWeight.w700,
+                                
+                                              const SizedBox(width: 12),
+                                
+                                              Expanded(
+                                                flex: 2,
+                                                child: SizedBox(
+                                                  height: 50,
+                                                  child: ElevatedButton.icon(
+                                                    onPressed: () async {
+                                                      final googleMapsUrl = Uri.parse(
+                                                        'https://www.google.com/maps/dir/?api=1'
+                                                        '&origin=$latitude,$longitude'
+                                                        '&destination=${widget.blatitude},${widget.blongitude}'
+                                                        '&travelmode=driving',
+                                                      );
+                                                      await launchUrl(
+                                                        googleMapsUrl,
+                                                        mode: LaunchMode
+                                                            .externalApplication,
+                                                      );
+                                                    },
+                                                    icon: const Icon(
+                                                      Icons.navigation_rounded,
+                                                      size: 19,
                                                     ),
-                                                  ),
-                                                  style: ElevatedButton.styleFrom(
-                                                    backgroundColor:
-                                                        const Color(0xFF159447),
-                                                    foregroundColor:
-                                                        Colors.white,
-                                                    elevation: 0,
-                                                    shape: RoundedRectangleBorder(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            14,
-                                                          ),
+                                                    label: const Text(
+                                                      "Navigate",
+                                                      style: TextStyle(
+                                                        fontSize: 14,
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                      ),
+                                                    ),
+                                                    style: ElevatedButton.styleFrom(
+                                                      backgroundColor:
+                                                          const Color(0xFF159447),
+                                                      foregroundColor:
+                                                          Colors.white,
+                                                      elevation: 0,
+                                                      shape: RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              14,
+                                                            ),
+                                                      ),
                                                     ),
                                                   ),
                                                 ),
                                               ),
-                                            ),
-                                          ],
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              );
+                                
+                                );
+                                 },
+                                 );
                             },
                           );
                         },
+
+                        
                         child: Text(
                           "open maps",
                           style: TextStyle(

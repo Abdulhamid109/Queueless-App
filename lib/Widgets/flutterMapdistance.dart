@@ -221,7 +221,7 @@ class _FluttermapdistanceState extends State<Fluttermapdistance> {
                         const SizedBox(height: 2),
 
                         Text(
-                          '${_distanceKm.toStringAsFixed(_distanceKm < 1 ? 2 : 1)} km',
+                          '${_distanceKm} km',
 
                           style: TextStyle(
                             fontSize: 16,
