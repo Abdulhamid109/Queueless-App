@@ -27,7 +27,7 @@ class NotificationService {
     );
 
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
-      'high_importance_channel',
+      'high_importance_channel_v1',
       'Queueless Notifications',
       description: 'Notifications from Queueless',
       importance: Importance.high,
@@ -72,7 +72,7 @@ class NotificationService {
   Future<void> showNotification(RemoteMessage message) async {
     const AndroidNotificationDetails androidDetails =
         AndroidNotificationDetails(
-      'high_importance_channel',
+      'high_importance_channel_v1',
       'Queueless Notifications',
       importance: Importance.high,
       priority: Priority.high,
