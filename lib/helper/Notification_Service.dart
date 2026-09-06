@@ -77,7 +77,7 @@ class NotificationService {
       importance: Importance.high,
       priority: Priority.high,
       playSound: true, 
-      sound: RawResourceAndroidNotificationSound( 'queuelessnotification', ),
+      sound: RawResourceAndroidNotificationSound('queuelessnotification'),
     );
 
     const NotificationDetails notificationDetails = NotificationDetails(
@@ -89,8 +89,6 @@ class NotificationService {
       title: message.notification?.title ?? "No title",
       body: message.notification?.body ?? "No body",
       notificationDetails: notificationDetails,
-
-      // Data that we can retrieve when notification is clicked
       payload: 'notification',
     );
   }

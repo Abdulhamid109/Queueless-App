@@ -11,6 +11,12 @@
         android:label="Queueless"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+         <meta-data
+                android:name="android.content.res.keep"
+                android:resource="@xml/keep" />
+            <meta-data
+                android:name="com.google.firebase.messaging.default_notification_channel_id"
+                android:value="high_importance_channel_v1" />
         <activity
             android:name="com.queuelessindia.app.MainActivity"
             android:exported="true"
@@ -29,9 +35,6 @@
               android:resource="@style/NormalTheme"
               />
 
-              <meta-data
-                android:name="android.content.res.keep"
-                android:resource="@xml/keep" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
