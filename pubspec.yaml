@@ -59,6 +59,7 @@ dependencies:
   flutter_launcher_icons: ^0.14.4
   permission_handler: ^11.3.1
   image_picker: ^1.2.3
+  connectivity_plus: ^7.3.1
 
 flutter_launcher_icons:
   android: true

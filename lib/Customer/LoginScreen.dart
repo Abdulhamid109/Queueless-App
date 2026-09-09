@@ -79,6 +79,15 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> handleLogin() async {
+    // final connectivity_check = await Connectivity().checkConnectivity();
+    // if(connectivity_check.contains(ConnectivityResult.none)){
+    //   Navigator.push(context, MaterialPageRoute(builder: (context) => NetworkErrorScreen(screen: LoginScreen(),),));
+    //   return;
+    // }
+    // if(connectivity_check.contains(ConnectivityResult.vpn)){
+    //   Navigator.push(context, MaterialPageRoute(builder: (context) => Networkvpnerror(),));
+    //   return;
+    // }
     setState(() {
       isloading = true;
     });

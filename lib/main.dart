@@ -9,6 +9,7 @@ import 'package:queueless/Customer/HomeScreen.dart';
 import 'package:queueless/Customer/notification.dart';
 // import 'package:queueless/Customer/LoginScreen.dart';
 import 'package:queueless/SplashScreen.dart';
+import 'package:queueless/Widgets/NetworkError.dart';
 import 'package:queueless/admin/AdminHomePage.dart';
 import 'package:queueless/constant/env.dart';
 import 'package:queueless/firebase_options.dart';
@@ -18,21 +19,20 @@ import 'package:queueless/models/WorkerInformationModal.dart';
 import 'package:queueless/models/businessInformationModal.dart';
 import 'package:queueless/models/serviceInformationModal.dart';
 import 'package:queueless/models/timeInformationModal.dart';
+import 'package:queueless/services/connectivityService.dart';
 import 'package:queueless/worker/workerhomeScreen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-
 @pragma('vm:entry-point')
-Future<void> _backgroundMessageHandler(RemoteMessage message)async{
+Future<void> _backgroundMessageHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
 }
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   FirebaseMessaging.onBackgroundMessage(_backgroundMessageHandler);
+  await ConnectivityService.instance.initialize();
   await Hive.initFlutter();
   Hive.registerAdapter(BusinessinformationmodalAdapter());
   Hive.registerAdapter(WorkerinformationmodalAdapter());
@@ -46,7 +46,6 @@ Future<void> main() async {
   await dotenv.load(fileName: '.env');
   SocketService().init(serverUrl: BaseUrl);
   runApp(MyApp(token: pref.getString("token")));
-
 }
 
 class MyApp extends StatefulWidget {
@@ -59,64 +58,57 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-   final NotificationService notificationService = NotificationService();
+  final NotificationService notificationService = NotificationService();
 
   @override
-
   void initState() {
-
     super.initState();
 
     _initNotifications();
-
   }
 
-Future<void> _initNotifications() async {
-  await notificationService.initLocalNotifications(
-    onNotificationTap: () {
+  Future<void> _initNotifications() async {
+    await notificationService.initLocalNotifications(
+      onNotificationTap: () {
+        navigatorKey.currentState?.push(
+          MaterialPageRoute(builder: (context) => const NotificationScreen()),
+        );
+      },
+    );
+
+    await notificationService.requestLNotificationPermission();
+
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      print("Foreground notification received");
+
+      notificationService.showNotification(message);
+    });
+
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      print("FCM notification clicked");
+
       navigatorKey.currentState?.push(
-        MaterialPageRoute(
-          builder: (context) => const NotificationScreen(),
-        ),
+        MaterialPageRoute(builder: (context) => const NotificationScreen()),
       );
-    },
-  );
+    });
 
-  await notificationService.requestLNotificationPermission();
+    // Terminated
+    RemoteMessage? initialMessage = await FirebaseMessaging.instance
+        .getInitialMessage();
 
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-    print("Foreground notification received");
+    if (initialMessage != null) {
+      print("App opened from terminated notification");
 
-    notificationService.showNotification(message);
-  });
-
-  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-    print("FCM notification clicked");
-
-    navigatorKey.currentState?.push(
-      MaterialPageRoute(
-        builder: (context) => const NotificationScreen(),
-      ),
-    );
-  });
-
-   // Terminated
-  RemoteMessage? initialMessage =
-      await FirebaseMessaging.instance.getInitialMessage();
-
-  if (initialMessage != null) {
-    print("App opened from terminated notification");
-
-    navigatorKey.currentState?.push(
-      MaterialPageRoute(
-        builder: (context) => const NotificationScreen(),
-      ),
-    );
+      navigatorKey.currentState?.push(
+        MaterialPageRoute(builder: (context) => const NotificationScreen()),
+      );
+    }
   }
-}
+
   @override
   Widget build(BuildContext context) {
-    bool isvalidtoken = widget.token != null && !JwtDecoder.isExpired(widget.token!);
+    bool isvalidtoken =
+        widget.token != null && !JwtDecoder.isExpired(widget.token!);
     Widget screen;
 
     if (isvalidtoken) {
@@ -124,9 +116,9 @@ Future<void> _initNotifications() async {
       String role = decodedToken["role"];
       if (role == "user") {
         screen = Homescreen();
-      } else if(role == "worker") {
+      } else if (role == "worker") {
         screen = Workerhomescreen();
-      } else{
+      } else {
         screen = Adminhomepage();
       }
     } else {
@@ -140,7 +132,23 @@ Future<void> _initNotifications() async {
         useMaterial3: true,
         textTheme: GoogleFonts.interTextTheme(Theme.of(context).textTheme),
       ),
-      home: screen,
+      home: StreamBuilder<bool>(
+  stream: ConnectivityService.instance.connectionStream,
+  initialData: ConnectivityService.instance.isConnected,
+  builder: (context, asyncSnapshot) {
+    final isConnected = asyncSnapshot.data ?? true;
+
+    if (!isConnected) {
+      return NetworkErrorScreen(
+        onTryAgain: () {
+          ConnectivityService.instance.checkNow();
+        },
+      );
+    }
+
+    return screen;
+  },
+),
       debugShowCheckedModeBanner: false,
     );
   }
