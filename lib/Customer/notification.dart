@@ -42,7 +42,7 @@ class LocationTrackingService {
 
     final locationSettings = AndroidSettings(
       accuracy: LocationAccuracy.high,
-      distanceFilter: 2,
+      distanceFilter: 10,
       intervalDuration: const Duration(seconds: 5),
       foregroundNotificationConfig: const ForegroundNotificationConfig(
         notificationTitle: "Queueless",
